@@ -6,8 +6,5 @@
     "predeploy": "npm run build",     
     "deploy": "gh-pages -d dist"     
   },
-```
-*(注意：上一行的 `preview"` 後面記得要加逗號 `,` 喔！)*
 
----
 
