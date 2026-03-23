@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 加入 maximum-scale=1.0, user-scalable=no 防止手機操作時意外放大畫面 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>露營空間配置工具</title>
   
   <!-- 引入 Tailwind CSS -->
@@ -16,7 +17,11 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    body { margin: 0; padding: 0; }
+    /* 隱藏捲軸但保留捲動功能，讓畫面更乾淨 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    body { margin: 0; padding: 0; overscroll-behavior-y: none; }
   </style>
 </head>
 <body>
@@ -25,13 +30,14 @@
   <script type="text/babel">
     const { useState, useRef, useEffect } = React;
 
-    // --- 圖示元件 (替換原本的 lucide-react) ---
+    // --- 圖示元件 ---
     const Move = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="19 9 22 12 19 15"/><polyline points="9 19 12 22 15 19"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="2"/></svg>;
     const Grid = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>;
     const Settings2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="7" r="3"/><circle cx="8" cy="17" r="3"/></svg>;
     const Plus = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
     const RotateCw = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>;
     const Trash2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
+    const X = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
     // --- 初始預設資料 ---
     const INITIAL_ITEMS = [
@@ -184,35 +190,44 @@
 
       return (
         <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
-          <header className="flex items-center justify-between px-6 py-3 bg-slate-900 border-b border-slate-800 shrink-0">
+          {/* 頂部工具列 (針對手機優化排版) */}
+          <header className="flex flex-wrap items-center justify-between px-3 py-3 lg:px-6 bg-slate-900 border-b border-slate-800 shrink-0 gap-y-3 shadow-md z-10">
             <div className="flex items-center gap-2">
-              <Move className="w-5 h-5 text-fuchsia-500" />
-              <h1 className="text-lg font-bold tracking-wide">露營空間配置工具 (總寬 25M x 深 8M)</h1>
+              <Move className="w-5 h-5 text-fuchsia-500 hidden sm:block" />
+              <h1 className="text-base font-bold tracking-wide">露營配置工具</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-white transition-colors">
+            <div className="flex items-center gap-2 lg:gap-4">
+              <button 
+                onClick={addNewItem}
+                className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">新增</span>
+              </button>
+              <label className="flex items-center gap-1.5 text-sm cursor-pointer hover:text-white transition-colors">
                 <input 
                   type="checkbox" 
                   checked={snapToGrid} 
                   onChange={(e) => setSnapToGrid(e.target.checked)}
-                  className="rounded bg-slate-800 border-slate-700 text-fuchsia-500 focus:ring-fuchsia-500"
+                  className="rounded bg-slate-800 border-slate-700 text-fuchsia-500 focus:ring-fuchsia-500 w-4 h-4"
                 />
-                <Grid className="w-4 h-4" />
-                貼齊網格 (10cm)
+                <Grid className="w-4 h-4 hidden sm:block" />
+                <span>貼齊網格</span>
               </label>
               <button 
                 onClick={() => setItems(INITIAL_ITEMS)}
                 className="text-sm px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 transition-colors"
               >
-                重置預設
+                重置
               </button>
             </div>
           </header>
 
           <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
             
+            {/* 畫布區：允許捲動，移除 touch-none 讓空白處可以滑動 */}
             <div 
-              className="flex-1 bg-[#1a1c20] p-4 lg:p-8 overflow-auto flex items-center justify-center relative touch-none select-none"
+              className="flex-1 bg-[#1a1c20] p-4 lg:p-8 overflow-auto relative select-none"
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerUp}
@@ -220,12 +235,14 @@
                 if (e.target === containerRef.current) setSelectedId(null);
               }}
             >
+              {/* 畫布本體：設定最小寬度確保在手機上夠大，可左右滑動 */}
               <div 
                 ref={containerRef}
-                className="relative bg-[#111215] border border-green-600 shadow-2xl shrink-0"
+                className="relative bg-[#111215] border border-green-600 shadow-2xl mx-auto"
                 style={{ 
                   width: '100%', 
-                  maxWidth: '1200px',
+                  minWidth: '900px', // 手機上會產生橫向捲軸
+                  maxWidth: '1500px',
                   aspectRatio: `${TOTAL_WIDTH} / ${TOTAL_HEIGHT}` 
                 }}
               >
@@ -262,11 +279,12 @@
                     <div
                       key={item.id}
                       onPointerDown={(e) => handlePointerDown(e, item.id)}
-                      className={`absolute cursor-move flex items-center justify-center text-center leading-tight touch-none transition-shadow
+                      className={`absolute cursor-move flex items-center justify-center text-center leading-tight transition-shadow
                         ${item.type === 'dashed' ? 'border-2 border-dashed' : 'border border-solid'}
                         ${item.borderColor} ${item.color}
                         ${isSelected ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#111215] z-10' : 'hover:ring-1 hover:ring-white/30 z-0'}
                         ${draggingId === item.id ? 'opacity-80' : 'opacity-100'}
+                        touch-none /* 只有物件本身禁止滑動網頁，以便觸控拖曳 */
                       `}
                       style={{
                         left: `${(item.x / TOTAL_WIDTH) * 100}%`,
@@ -274,7 +292,7 @@
                         width: `${(item.w / TOTAL_WIDTH) * 100}%`,
                         height: `${(item.h / TOTAL_HEIGHT) * 100}%`,
                         transform: `rotate(${item.rotation || 0}deg)`,
-                        fontSize: 'clamp(0.6rem, 1.2vw, 1rem)',
+                        fontSize: 'clamp(12px, 1.5vw, 16px)',
                         fontWeight: 700,
                         textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
                       }}
@@ -302,29 +320,37 @@
               </div>
             </div>
 
-            <div className="w-full lg:w-80 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 p-5 flex flex-col shrink-0 overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
+            {/* 手機版：底部滑出抽屜 | 電腦版：右側固定面板 */}
+            <div className={`
+              absolute lg:relative bottom-0 left-0 right-0 z-50 w-full lg:w-80 bg-slate-900 
+              border-t lg:border-t-0 lg:border-l border-slate-700 lg:border-slate-800 
+              flex flex-col shrink-0 transition-transform duration-300 ease-in-out
+              ${selectedItemData ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}
+              max-h-[60vh] lg:max-h-none lg:h-full rounded-t-2xl lg:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none
+            `}>
+              
+              <div className="flex items-center justify-between p-4 lg:p-5 border-b border-slate-800 lg:border-none">
+                <h2 className="text-base font-semibold flex items-center gap-2">
                   <Settings2 className="w-5 h-5 text-slate-400" />
-                  屬性設定
+                  {selectedItemData ? `設定: ${selectedItemData.name.split('\n')[0]}` : '屬性設定'}
                 </h2>
+                {/* 手機版專屬關閉按鈕 */}
                 <button 
-                  onClick={addNewItem}
-                  className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-md transition-colors"
-                  title="新增物件"
+                  onClick={() => setSelectedId(null)}
+                  className="lg:hidden p-2 -mr-2 text-slate-400 hover:text-white bg-slate-800 rounded-full"
                 >
-                  <Plus className="w-5 h-5" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {selectedItemData ? (
-                <div className="space-y-5">
+                <div className="p-4 pt-0 lg:p-5 lg:pt-0 overflow-y-auto flex-1 space-y-4">
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">名稱 (可換行)</label>
                     <textarea 
                       value={selectedItemData.name}
                       onChange={(e) => updateSelectedItem({ name: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500 h-20 resize-none"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500 h-16 resize-none"
                     />
                   </div>
 
@@ -372,7 +398,7 @@
 
                   <div>
                     <label className="block text-xs font-medium text-slate-400 mb-2">出入口位置 (門標記)</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {[
                         { value: 'top', label: '上' },
                         { value: 'bottom', label: '下' },
@@ -383,7 +409,7 @@
                         <button
                           key={option.value || 'none'}
                           onClick={() => updateSelectedItem({ door: option.value })}
-                          className={`flex-1 py-1.5 text-sm rounded-md border transition-colors ${
+                          className={`flex-1 py-2 text-sm rounded-md border transition-colors ${
                             selectedItemData.door === option.value
                               ? 'bg-fuchsia-600 border-fuchsia-500 text-white font-medium'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
@@ -402,24 +428,24 @@
                     </label>
                     <button 
                       onClick={() => updateSelectedItem({ rotation: ((selectedItemData.rotation || 0) + 90) % 360 })}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-slate-950 border border-slate-800 hover:border-fuchsia-500 rounded-md text-sm transition-colors text-slate-300"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-slate-950 border border-slate-800 hover:border-fuchsia-500 rounded-md text-sm transition-colors text-slate-300 active:bg-slate-800"
                     >
                       <RotateCw className="w-4 h-4 text-fuchsia-500" />
                       點擊順時針旋轉 90°
                     </button>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-800 flex flex-col gap-2">
+                  <div className="pt-2 flex flex-col gap-2 pb-6 lg:pb-0">
                     <button 
                       onClick={rotateSelectedItem}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-slate-800 hover:bg-slate-700 rounded-md text-sm font-medium transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 rounded-md text-sm font-medium transition-colors active:bg-slate-700"
                     >
                       <RotateCw className="w-4 h-4" />
                       長寬對調 (重新設定尺寸)
                     </button>
                     <button 
                       onClick={deleteSelectedItem}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md text-sm font-medium transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md text-sm font-medium transition-colors active:bg-red-500/30"
                     >
                       <Trash2 className="w-4 h-4" />
                       刪除此物件
@@ -428,7 +454,7 @@
 
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center text-sm p-4">
+                <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-slate-500 text-center text-sm p-4">
                   <Move className="w-12 h-12 mb-3 opacity-20" />
                   <p>點擊左側畫布中的物件</p>
                   <p>即可在此檢視與編輯詳細尺寸設定。</p>
