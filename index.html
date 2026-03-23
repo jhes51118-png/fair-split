@@ -321,84 +321,59 @@
             </div>
 
             {/* 手機版：底部滑出抽屜 | 電腦版：右側固定面板 */}
+            {/* 將手機版的高度改為 h-[35vh] (約佔螢幕的 1/3) */}
             <div className={`
               absolute lg:relative bottom-0 left-0 right-0 z-50 w-full lg:w-80 bg-slate-900 
               border-t lg:border-t-0 lg:border-l border-slate-700 lg:border-slate-800 
               flex flex-col shrink-0 transition-transform duration-300 ease-in-out
               ${selectedItemData ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}
-              max-h-[60vh] lg:max-h-none lg:h-full rounded-t-2xl lg:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none
+              h-[35vh] lg:h-full lg:max-h-none rounded-t-2xl lg:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none
             `}>
               
-              <div className="flex items-center justify-between p-4 lg:p-5 border-b border-slate-800 lg:border-none">
+              <div className="flex items-center justify-between p-3 lg:p-5 border-b border-slate-800 lg:border-none shrink-0">
                 <h2 className="text-base font-semibold flex items-center gap-2">
                   <Settings2 className="w-5 h-5 text-slate-400" />
                   {selectedItemData ? `設定: ${selectedItemData.name.split('\n')[0]}` : '屬性設定'}
                 </h2>
-                {/* 手機版專屬關閉按鈕 */}
                 <button 
                   onClick={() => setSelectedId(null)}
-                  className="lg:hidden p-2 -mr-2 text-slate-400 hover:text-white bg-slate-800 rounded-full"
+                  className="lg:hidden p-1.5 -mr-1 text-slate-400 hover:text-white bg-slate-800 rounded-full"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {selectedItemData ? (
-                <div className="p-4 pt-0 lg:p-5 lg:pt-0 overflow-y-auto flex-1 space-y-4">
+                <div className="p-3 pt-0 lg:p-5 lg:pt-0 overflow-y-auto flex-1 space-y-3">
+                  
+                  {/* 1. 旋轉控制 (移到最上方) */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">名稱 (可換行)</label>
-                    <textarea 
-                      value={selectedItemData.name}
-                      onChange={(e) => updateSelectedItem({ name: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500 h-16 resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">寬度 (W) cm</label>
-                      <input 
-                        type="number" 
-                        value={selectedItemData.w}
-                        onChange={(e) => updateSelectedItem({ w: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">深度 (H) cm</label>
-                      <input 
-                        type="number" 
-                        value={selectedItemData.h}
-                        onChange={(e) => updateSelectedItem({ h: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
+                    <label className="flex justify-between text-xs font-medium text-slate-400 mb-1">
+                      <span>旋轉與轉向</span>
+                      <span>{selectedItemData.rotation || 0}°</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => updateSelectedItem({ rotation: ((selectedItemData.rotation || 0) + 90) % 360 })}
+                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 border border-slate-800 hover:border-fuchsia-500 rounded-md text-sm transition-colors text-slate-300"
+                      >
+                        <RotateCw className="w-4 h-4 text-fuchsia-500" />
+                        轉 90°
+                      </button>
+                      <button 
+                        onClick={rotateSelectedItem}
+                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-sm transition-colors"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                        長寬對調
+                      </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">X 座標 (左距)</label>
-                      <input 
-                        type="number" 
-                        value={Math.round(selectedItemData.x)}
-                        onChange={(e) => updateSelectedItem({ x: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Y 座標 (上距)</label>
-                      <input 
-                        type="number" 
-                        value={Math.round(selectedItemData.y)}
-                        onChange={(e) => updateSelectedItem({ y: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                  </div>
-
+                  {/* 2. 出入口位置 */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-2">出入口位置 (門標記)</label>
-                    <div className="flex flex-wrap gap-2">
+                    <label className="block text-xs font-medium text-slate-400 mb-1">出入口位置 (門標記)</label>
+                    <div className="flex flex-wrap gap-1.5">
                       {[
                         { value: 'top', label: '上' },
                         { value: 'bottom', label: '下' },
@@ -409,10 +384,10 @@
                         <button
                           key={option.value || 'none'}
                           onClick={() => updateSelectedItem({ door: option.value })}
-                          className={`flex-1 py-2 text-sm rounded-md border transition-colors ${
+                          className={`flex-1 py-1 text-sm rounded-md border transition-colors ${
                             selectedItemData.door === option.value
                               ? 'bg-fuchsia-600 border-fuchsia-500 text-white font-medium'
-                              : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-600 hover:text-slate-200'
+                              : 'bg-slate-950 border-slate-800 text-slate-400'
                           }`}
                         >
                           {option.label}
@@ -421,31 +396,65 @@
                     </div>
                   </div>
 
+                  {/* 3. 名稱 */}
                   <div>
-                    <label className="flex justify-between text-xs font-medium text-slate-400 mb-1">
-                      <span>外觀旋轉角度</span>
-                      <span>{selectedItemData.rotation || 0}°</span>
-                    </label>
-                    <button 
-                      onClick={() => updateSelectedItem({ rotation: ((selectedItemData.rotation || 0) + 90) % 360 })}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-slate-950 border border-slate-800 hover:border-fuchsia-500 rounded-md text-sm transition-colors text-slate-300 active:bg-slate-800"
-                    >
-                      <RotateCw className="w-4 h-4 text-fuchsia-500" />
-                      點擊順時針旋轉 90°
-                    </button>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">名稱 (可換行)</label>
+                    <textarea 
+                      value={selectedItemData.name}
+                      onChange={(e) => updateSelectedItem({ name: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500 h-12 resize-none"
+                    />
                   </div>
 
-                  <div className="pt-2 flex flex-col gap-2 pb-6 lg:pb-0">
-                    <button 
-                      onClick={rotateSelectedItem}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-slate-700 rounded-md text-sm font-medium transition-colors active:bg-slate-700"
-                    >
-                      <RotateCw className="w-4 h-4" />
-                      長寬對調 (重新設定尺寸)
-                    </button>
+                  {/* 4. 尺寸調整 (移到下方) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">寬度 (W) cm</label>
+                      <input 
+                        type="number" 
+                        value={selectedItemData.w}
+                        onChange={(e) => updateSelectedItem({ w: Number(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">深度 (H) cm</label>
+                      <input 
+                        type="number" 
+                        value={selectedItemData.h}
+                        onChange={(e) => updateSelectedItem({ h: Number(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 5. 座標調整 */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">X 座標 (左距)</label>
+                      <input 
+                        type="number" 
+                        value={Math.round(selectedItemData.x)}
+                        onChange={(e) => updateSelectedItem({ x: Number(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-400 mb-1">Y 座標 (上距)</label>
+                      <input 
+                        type="number" 
+                        value={Math.round(selectedItemData.y)}
+                        onChange={(e) => updateSelectedItem({ y: Number(e.target.value) || 0 })}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 6. 刪除按鈕 */}
+                  <div className="pt-2 pb-6 lg:pb-0 border-t border-slate-800">
                     <button 
                       onClick={deleteSelectedItem}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md text-sm font-medium transition-colors active:bg-red-500/30"
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md text-sm font-medium transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                       刪除此物件
