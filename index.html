@@ -1,482 +1,229 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <!-- 加入 maximum-scale=1.0, user-scalable=no 防止手機操作時意外放大畫面 -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>露營空間配置工具</title>
-  
-  <!-- 引入 Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 引入 React 與 ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- 引入 Babel 以在瀏覽器中編譯 JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    /* 隱藏捲軸但保留捲動功能，讓畫面更乾淨 */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    body { margin: 0; padding: 0; overscroll-behavior-y: none; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useRef, useEffect } = React;
-
-    // --- 圖示元件 ---
-    const Move = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="19 9 22 12 19 15"/><polyline points="9 19 12 22 15 19"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="2"/></svg>;
-    const Grid = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>;
-    const Settings2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="7" r="3"/><circle cx="8" cy="17" r="3"/></svg>;
-    const Plus = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>;
-    const RotateCw = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>;
-    const Trash2 = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
-    const X = ({className}) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
-
-    // --- 初始預設資料 ---
-    const INITIAL_ITEMS = [
-      { id: 1, name: '偉姪女\n(2大)', w: 500, h: 700, x: 20, y: 10, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: null, rotation: 0 },
-      { id: 2, name: '客廳帳\n310x310', w: 310, h: 310, x: 800, y: 450, type: 'solid', color: 'text-white', borderColor: 'border-white', door: null, rotation: 0 },
-      { id: 3, name: '天幕\n540x440', w: 540, h: 440, x: 1150, y: 350, type: 'solid', color: 'text-white', borderColor: 'border-white', door: null, rotation: 0 },
-      { id: 4, name: '珊\n(2大2小)', w: 330, h: 760, x: 1400, y: 50, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: 'left', rotation: 0 },
-      { id: 5, name: '偉\n(2大1小)', w: 280, h: 210, x: 1820, y: 520, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: 'left', rotation: 0 },
-      { id: 6, name: '學姊\n(2大)', w: 300, h: 200, x: 2150, y: 520, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: 'top', rotation: 0 },
-      { id: 7, name: '17\n(2大)', w: 300, h: 200, x: 2150, y: 150, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: 'bottom', rotation: 0 },
-      { id: 8, name: '安盛車', w: 220, h: 450, x: 2260, y: 200, type: 'dashed', color: 'text-fuchsia-500', borderColor: 'border-fuchsia-600', door: 'left', rotation: 0 },
-    ];
-
-    const TOTAL_WIDTH = 2500; // 總寬 2500 cm (1800 + 700)
-    const TOTAL_HEIGHT = 800; // 總高 800 cm
-
-    // --- 主程式 ---
-    function App() {
-      const [items, setItems] = useState(() => {
-        const saved = localStorage.getItem('camping-layout');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          return parsed.map(item => ({
-            ...item,
-            rotation: item.rotation || 0,
-            name: item.name.replace('瑋', '珊') 
-          }));
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票代號擷取工具</title>
+    <!-- 引入 Tailwind CSS 進行美化 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
+            background-color: #f3f4f6;
         }
-        return INITIAL_ITEMS;
-      });
-      const [selectedId, setSelectedId] = useState(null);
-      const [draggingId, setDraggingId] = useState(null);
-      const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-      const [snapToGrid, setSnapToGrid] = useState(true);
-      
-      const containerRef = useRef(null);
+        /* 自訂滾動條 */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
 
-      useEffect(() => {
-        localStorage.setItem('camping-layout', JSON.stringify(items));
-      }, [items]);
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
+        <!-- 標題區塊 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">股票代號擷取工具</h1>
+            <p class="text-gray-500 text-sm">上傳股東會或庫存 CSV 檔案，自動擷取並串接股票代號</p>
+        </div>
 
-      const handlePointerDown = (e, id) => {
-        e.stopPropagation();
-        e.target.setPointerCapture(e.pointerId);
-        
-        setItems(prev => {
-          const item = prev.find(i => i.id === id);
-          const others = prev.filter(i => i.id !== id);
-          return [...others, item];
+        <!-- 檔案上傳區塊 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">1. 選擇 CSV 檔案</label>
+            <div class="flex items-center justify-center w-full">
+                <label for="csvFileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                        <svg class="w-8 h-8 mb-3 text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                        </svg>
+                        <p class="mb-2 text-sm text-gray-700"><span class="font-semibold text-blue-600">點擊上傳</span> 或將檔案拖曳至此</p>
+                        <p class="text-xs text-gray-500">支援 .csv 格式</p>
+                    </div>
+                    <input id="csvFileInput" type="file" accept=".csv" class="hidden" />
+                </label>
+            </div>
+            <p id="fileNameDisplay" class="mt-2 text-sm text-green-600 hidden font-medium">已選取檔案：<span id="fileNameText"></span></p>
+        </div>
+
+        <!-- 篩選條件區塊 -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">2. 篩選條件 (投票狀況)</label>
+            <div class="flex items-center space-x-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="voteStatus" value="all" checked class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-gray-700">全部</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="voteStatus" value="voted" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-gray-700">只擷取「已投票」</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                    <input type="radio" name="voteStatus" value="unvoted" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                    <span class="ml-2 text-gray-700">只擷取「未投票」</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 結果顯示區塊 -->
+        <div class="mb-4">
+            <div class="flex justify-between items-end mb-2">
+                <label class="block text-sm font-medium text-gray-700">3. 擷取結果</label>
+                <span id="countDisplay" class="text-xs text-gray-500 hidden">共找到 <span id="countNumber" class="font-bold text-blue-600">0</span> 筆代號</span>
+            </div>
+            <textarea id="resultArea" readonly class="w-full h-40 p-4 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="擷取後的代號會顯示在這裡..."></textarea>
+        </div>
+
+        <!-- 複製按鈕區塊 -->
+        <div class="flex items-center space-x-4">
+            <button id="copyBtn" onclick="copyToClipboard()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                複製代號
+            </button>
+            <div id="copyMsg" class="hidden px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium transition-opacity">
+                ✅ 已複製到剪貼簿！
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('csvFileInput');
+        const resultArea = document.getElementById('resultArea');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyMsg = document.getElementById('copyMsg');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fileNameText = document.getElementById('fileNameText');
+        const countDisplay = document.getElementById('countDisplay');
+        const countNumber = document.getElementById('countNumber');
+
+        // 儲存原始 CSV 資料，以便切換選項時不用重新上傳
+        let globalCSVText = "";
+
+        // 監聽單選按鈕切換事件
+        const radioButtons = document.querySelectorAll('input[name="voteStatus"]');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (globalCSVText) {
+                    processCSV(globalCSVText);
+                }
+            });
         });
 
-        const rect = containerRef.current.getBoundingClientRect();
-        const scaleX = rect.width / TOTAL_WIDTH;
-        const scaleY = rect.height / TOTAL_HEIGHT;
+        // 監聽檔案上傳事件
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        const item = items.find(i => i.id === id);
-        const offsetX = (e.clientX - rect.left) / scaleX - item.x;
-        const offsetY = (e.clientY - rect.top) / scaleY - item.y;
+            // 顯示檔案名稱
+            fileNameText.textContent = file.name;
+            fileNameDisplay.classList.remove('hidden');
 
-        setDraggingId(id);
-        setSelectedId(id);
-        setDragOffset({ x: offsetX, y: offsetY });
-      };
-
-      const handlePointerMove = (e) => {
-        if (!draggingId) return;
-
-        const rect = containerRef.current.getBoundingClientRect();
-        const scaleX = rect.width / TOTAL_WIDTH;
-        const scaleY = rect.height / TOTAL_HEIGHT;
-
-        let newX = (e.clientX - rect.left) / scaleX - dragOffset.x;
-        let newY = (e.clientY - rect.top) / scaleY - dragOffset.y;
-
-        if (snapToGrid) {
-          newX = Math.round(newX / 10) * 10;
-          newY = Math.round(newY / 10) * 10;
-        }
-
-        setItems(prev => prev.map(item => {
-          if (item.id === draggingId) {
-            const clampedX = Math.max(-item.w + 50, Math.min(newX, TOTAL_WIDTH - 50));
-            const clampedY = Math.max(-item.h + 50, Math.min(newY, TOTAL_HEIGHT - 50));
-            return { ...item, x: clampedX, y: clampedY };
-          }
-          return item;
-        }));
-      };
-
-      const handlePointerUp = (e) => {
-        if (draggingId) {
-          e.target.releasePointerCapture(e.pointerId);
-          setDraggingId(null);
-        }
-      };
-
-      const updateSelectedItem = (updates) => {
-        setItems(prev => prev.map(item => 
-          item.id === selectedId ? { ...item, ...updates } : item
-        ));
-      };
-
-      const rotateSelectedItem = () => {
-        setItems(prev => prev.map(item => {
-          if (item.id === selectedId) {
-            const nextDoor = {
-              'top': 'right',
-              'right': 'bottom',
-              'bottom': 'left',
-              'left': 'top',
-              null: null
-            }[item.door];
+            const reader = new FileReader();
             
-            return { 
-              ...item, 
-              w: item.h, 
-              h: item.w,
-              door: nextDoor
+            // 使用 Big5 編碼讀取，避免台灣常見的 Excel CSV 中文亂碼問題
+            // 即使是 UTF-8，因為我們只要數字代號，這也不會影響擷取結果
+            reader.readAsText(file, 'Big5');
+            
+            reader.onload = function(event) {
+                globalCSVText = event.target.result;
+                processCSV(globalCSVText);
             };
-          }
-          return item;
-        }));
-      };
 
-      const addNewItem = () => {
-        const newItem = {
-          id: Date.now(),
-          name: '新物件',
-          w: 300,
-          h: 300,
-          x: 500,
-          y: 250,
-          type: 'dashed',
-          color: 'text-blue-400',
-          borderColor: 'border-blue-500',
-          door: null,
-          rotation: 0
-        };
-        setItems([...items, newItem]);
-        setSelectedId(newItem.id);
-      };
+            reader.onerror = function() {
+                resultArea.value = "讀取檔案發生錯誤，請重試。";
+            };
+        });
 
-      const deleteSelectedItem = () => {
-        if (!selectedId) return;
-        setItems(prev => prev.filter(item => item.id !== selectedId));
-        setSelectedId(null);
-      };
+        // 處理 CSV 內容
+        function processCSV(text) {
+            // 取得目前的篩選條件
+            const filterValue = document.querySelector('input[name="voteStatus"]:checked').value;
 
-      const selectedItemData = items.find(i => i.id === selectedId);
+            // 分割每一行 (支援 \n 或 \r\n)
+            const lines = text.trim().split(/\r?\n/);
+            const codes = [];
 
-      return (
-        <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
-          {/* 頂部工具列 (針對手機優化排版) */}
-          <header className="flex flex-wrap items-center justify-between px-3 py-3 lg:px-6 bg-slate-900 border-b border-slate-800 shrink-0 gap-y-3 shadow-md z-10">
-            <div className="flex items-center gap-2">
-              <Move className="w-5 h-5 text-fuchsia-500 hidden sm:block" />
-              <h1 className="text-base font-bold tracking-wide">露營配置工具</h1>
-            </div>
-            <div className="flex items-center gap-2 lg:gap-4">
-              <button 
-                onClick={addNewItem}
-                className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">新增</span>
-              </button>
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer hover:text-white transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={snapToGrid} 
-                  onChange={(e) => setSnapToGrid(e.target.checked)}
-                  className="rounded bg-slate-800 border-slate-700 text-fuchsia-500 focus:ring-fuchsia-500 w-4 h-4"
-                />
-                <Grid className="w-4 h-4 hidden sm:block" />
-                <span>貼齊網格</span>
-              </label>
-              <button 
-                onClick={() => setItems(INITIAL_ITEMS)}
-                className="text-sm px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 transition-colors"
-              >
-                重置
-              </button>
-            </div>
-          </header>
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue; // 跳過空行
 
-          <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+                // 取得第一欄資料
+                const firstColumn = line.split(',')[0];
+                
+                // 去除可能存在的等號(=)和雙引號(")，並移除空白
+                const cleanCode = firstColumn.replace(/[="]/g, '').trim();
+
+                // 檢查是否為純數字 (用來過濾掉像是 "證券代號" 這樣的標題行)
+                if (/^\d+$/.test(cleanCode)) {
+                    
+                    // 根據投票狀況進行篩選
+                    if (filterValue === 'voted' && !line.includes('已投票')) {
+                        continue;
+                    }
+                    if (filterValue === 'unvoted' && !line.includes('未投票')) {
+                        continue;
+                    }
+
+                    codes.push(cleanCode);
+                }
+            }
+
+            // 將陣列用逗號串接
+            const finalString = codes.join(',');
             
-            {/* 畫布區：允許捲動，移除 touch-none 讓空白處可以滑動 */}
-            <div 
-              className="flex-1 bg-[#1a1c20] p-4 lg:p-8 overflow-auto relative select-none"
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              onClick={(e) => {
-                if (e.target === containerRef.current) setSelectedId(null);
-              }}
-            >
-              {/* 畫布本體：設定最小寬度確保在手機上夠大，可左右滑動 */}
-              <div 
-                ref={containerRef}
-                className="relative bg-[#111215] border border-green-600 shadow-2xl mx-auto"
-                style={{ 
-                  width: '100%', 
-                  minWidth: '900px', // 手機上會產生橫向捲軸
-                  maxWidth: '1500px',
-                  aspectRatio: `${TOTAL_WIDTH} / ${TOTAL_HEIGHT}` 
-                }}
-              >
-                <div 
-                  className="absolute inset-0 pointer-events-none opacity-10"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(to right, #ffffff 1px, transparent 1px),
-                      linear-gradient(to bottom, #ffffff 1px, transparent 1px)
-                    `,
-                    backgroundSize: `${(100 / TOTAL_WIDTH) * 100}% ${(100 / TOTAL_HEIGHT) * 100}%`
-                  }}
-                />
+            // 顯示結果
+            resultArea.value = finalString;
 
-                <div 
-                  className="absolute top-0 bottom-0 border-l border-green-600 pointer-events-none"
-                  style={{ left: `${(1800 / TOTAL_WIDTH) * 100}%` }}
-                />
+            // 顯示數量
+            countNumber.textContent = codes.length;
+            countDisplay.classList.remove('hidden');
 
-                <div className="absolute top-[-24px] text-green-500 text-xs font-bold whitespace-nowrap pointer-events-none" style={{ left: '36%' }}>
-                  草皮/碎石區 1800
-                </div>
-                <div className="absolute top-[-24px] text-green-500 text-xs font-bold whitespace-nowrap pointer-events-none" style={{ left: '86%' }}>
-                  雨棚區 700
-                </div>
-                <div className="absolute left-[-28px] top-[50%] text-red-500 text-xs font-bold whitespace-nowrap -rotate-90 pointer-events-none">
-                  800
-                </div>
+            // 啟用複製按鈕
+            if (codes.length > 0) {
+                copyBtn.disabled = false;
+                copyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                resultArea.value = "找不到符合格式的股票代號。";
+                copyBtn.disabled = true;
+                copyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
 
-                {items.map(item => {
-                  const isSelected = selectedId === item.id;
-                  
-                  return (
-                    <div
-                      key={item.id}
-                      onPointerDown={(e) => handlePointerDown(e, item.id)}
-                      className={`absolute cursor-move flex items-center justify-center text-center leading-tight transition-shadow
-                        ${item.type === 'dashed' ? 'border-2 border-dashed' : 'border border-solid'}
-                        ${item.borderColor} ${item.color}
-                        ${isSelected ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#111215] z-10' : 'hover:ring-1 hover:ring-white/30 z-0'}
-                        ${draggingId === item.id ? 'opacity-80' : 'opacity-100'}
-                        touch-none /* 只有物件本身禁止滑動網頁，以便觸控拖曳 */
-                      `}
-                      style={{
-                        left: `${(item.x / TOTAL_WIDTH) * 100}%`,
-                        top: `${(item.y / TOTAL_HEIGHT) * 100}%`,
-                        width: `${(item.w / TOTAL_WIDTH) * 100}%`,
-                        height: `${(item.h / TOTAL_HEIGHT) * 100}%`,
-                        transform: `rotate(${item.rotation || 0}deg)`,
-                        fontSize: 'clamp(12px, 1.5vw, 16px)',
-                        fontWeight: 700,
-                        textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
-                      }}
-                    >
-                      {item.door && (
-                        <div 
-                          className="absolute bg-fuchsia-600"
-                          style={{
-                            ...(item.door === 'left' ? { left: '-4px', top: '20%', bottom: '20%', width: '4px' } : {}),
-                            ...(item.door === 'right' ? { right: '-4px', top: '20%', bottom: '20%', width: '4px' } : {}),
-                            ...(item.door === 'top' ? { top: '-4px', left: '20%', right: '20%', height: '4px' } : {}),
-                            ...(item.door === 'bottom' ? { bottom: '-4px', left: '20%', right: '20%', height: '4px' } : {}),
-                          }}
-                        />
-                      )}
-                      
-                      <div>
-                        {item.name.split('\n').map((line, i) => (
-                          <div key={i}>{line}</div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+        // 複製到剪貼簿功能
+        function copyToClipboard() {
+            if (!resultArea.value) return;
 
-            {/* 手機版：底部滑出抽屜 | 電腦版：右側固定面板 */}
-            {/* 將手機版的高度改為 h-[35vh] (約佔螢幕的 1/3) */}
-            <div className={`
-              absolute lg:relative bottom-0 left-0 right-0 z-50 w-full lg:w-80 bg-slate-900 
-              border-t lg:border-t-0 lg:border-l border-slate-700 lg:border-slate-800 
-              flex flex-col shrink-0 transition-transform duration-300 ease-in-out
-              ${selectedItemData ? 'translate-y-0' : 'translate-y-full lg:translate-y-0'}
-              h-[35vh] lg:h-full lg:max-h-none rounded-t-2xl lg:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.5)] lg:shadow-none
-            `}>
-              
-              <div className="flex items-center justify-between p-3 lg:p-5 border-b border-slate-800 lg:border-none shrink-0">
-                <h2 className="text-base font-semibold flex items-center gap-2">
-                  <Settings2 className="w-5 h-5 text-slate-400" />
-                  {selectedItemData ? `設定: ${selectedItemData.name.split('\n')[0]}` : '屬性設定'}
-                </h2>
-                <button 
-                  onClick={() => setSelectedId(null)}
-                  className="lg:hidden p-1.5 -mr-1 text-slate-400 hover:text-white bg-slate-800 rounded-full"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+            // 選取 textarea 中的文字
+            resultArea.select();
+            resultArea.setSelectionRange(0, 99999); // 支援手機版
 
-              {selectedItemData ? (
-                <div className="p-3 pt-0 lg:p-5 lg:pt-0 overflow-y-auto flex-1 space-y-3">
-                  
-                  {/* 1. 旋轉控制 (移到最上方) */}
-                  <div>
-                    <label className="flex justify-between text-xs font-medium text-slate-400 mb-1">
-                      <span>旋轉與轉向</span>
-                      <span>{selectedItemData.rotation || 0}°</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => updateSelectedItem({ rotation: ((selectedItemData.rotation || 0) + 90) % 360 })}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 border border-slate-800 hover:border-fuchsia-500 rounded-md text-sm transition-colors text-slate-300"
-                      >
-                        <RotateCw className="w-4 h-4 text-fuchsia-500" />
-                        轉 90°
-                      </button>
-                      <button 
-                        onClick={rotateSelectedItem}
-                        className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-md text-sm transition-colors"
-                      >
-                        <RotateCw className="w-4 h-4" />
-                        長寬對調
-                      </button>
-                    </div>
-                  </div>
+            try {
+                // 執行複製指令 (使用文件建議的 execCommand 以兼容 iFrame)
+                document.execCommand('copy');
+                
+                // 取消反白
+                window.getSelection().removeAllRanges();
 
-                  {/* 2. 出入口位置 */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">出入口位置 (門標記)</label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { value: 'top', label: '上' },
-                        { value: 'bottom', label: '下' },
-                        { value: 'left', label: '左' },
-                        { value: 'right', label: '右' },
-                        { value: null, label: '無' }
-                      ].map(option => (
-                        <button
-                          key={option.value || 'none'}
-                          onClick={() => updateSelectedItem({ door: option.value })}
-                          className={`flex-1 py-1 text-sm rounded-md border transition-colors ${
-                            selectedItemData.door === option.value
-                              ? 'bg-fuchsia-600 border-fuchsia-500 text-white font-medium'
-                              : 'bg-slate-950 border-slate-800 text-slate-400'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 3. 名稱 */}
-                  <div>
-                    <label className="block text-xs font-medium text-slate-400 mb-1">名稱 (可換行)</label>
-                    <textarea 
-                      value={selectedItemData.name}
-                      onChange={(e) => updateSelectedItem({ name: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500 h-12 resize-none"
-                    />
-                  </div>
-
-                  {/* 4. 尺寸調整 (移到下方) */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">寬度 (W) cm</label>
-                      <input 
-                        type="number" 
-                        value={selectedItemData.w}
-                        onChange={(e) => updateSelectedItem({ w: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">深度 (H) cm</label>
-                      <input 
-                        type="number" 
-                        value={selectedItemData.h}
-                        onChange={(e) => updateSelectedItem({ h: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 5. 座標調整 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">X 座標 (左距)</label>
-                      <input 
-                        type="number" 
-                        value={Math.round(selectedItemData.x)}
-                        onChange={(e) => updateSelectedItem({ x: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Y 座標 (上距)</label>
-                      <input 
-                        type="number" 
-                        value={Math.round(selectedItemData.y)}
-                        onChange={(e) => updateSelectedItem({ y: Number(e.target.value) || 0 })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-fuchsia-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 6. 刪除按鈕 */}
-                  <div className="pt-2 pb-6 lg:pb-0 border-t border-slate-800">
-                    <button 
-                      onClick={deleteSelectedItem}
-                      className="w-full flex items-center justify-center gap-2 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md text-sm font-medium transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      刪除此物件
-                    </button>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="hidden lg:flex flex-1 flex-col items-center justify-center text-slate-500 text-center text-sm p-4">
-                  <Move className="w-12 h-12 mb-3 opacity-20" />
-                  <p>點擊左側畫布中的物件</p>
-                  <p>即可在此檢視與編輯詳細尺寸設定。</p>
-                </div>
-              )}
-            </div>
-          </main>
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
+                // 顯示成功提示
+                copyMsg.classList.remove('hidden');
+                
+                // 2秒後隱藏提示
+                setTimeout(() => {
+                    copyMsg.classList.add('hidden');
+                }, 2000);
+            } catch (err) {
+                console.error('複製失敗', err);
+            }
+        }
+    </script>
 </body>
 </html>
