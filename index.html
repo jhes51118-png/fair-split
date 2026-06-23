@@ -1,246 +1,283 @@
-import React, { useState, useEffect } from 'react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鉚釘花齒干涉填充比計算器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-4 md:p-8 font-sans flex flex-col items-center min-h-screen">
 
-export default function App() {
-  // --- 狀態定義 (預設為您圖面上的數值) ---
-  const [dTop, setDTop] = useState(5.00);   // 花齒頂部直徑
-  const [dRoot, setDRoot] = useState(4.47); // 花齒根部直徑
-  const [dBase, setDBase] = useState(4.00); // 鉚釘底盤直徑
-  const [tA, setTA] = useState(0.30);       // 花齒厚度
-
-  const [dOut, setDOut] = useState(4.00);   // 溝環外徑
-  const [dIn, setDIn] = useState(3.40);     // 溝環內徑
-  const [tB, setTB] = useState(0.30);       // 溝環深度/厚度
-
-  // --- 計算結果狀態 ---
-  const [volA, setVolA] = useState(0);
-  const [volB, setVolB] = useState(0);
-  const [fillRatio, setFillRatio] = useState(0);
-
-  // --- 即時計算邏輯 ---
-  useEffect(() => {
-    // 1. 計算花齒干涉體積 A (等效 50% 面積法)
-    const aBase = Math.PI * Math.pow(dBase / 2, 2);
-    const aRoot = Math.PI * Math.pow(dRoot / 2, 2);
-    const aTop = Math.PI * Math.pow(dTop / 2, 2);
-    
-    // 花齒等效面積 = 根部面積 + 0.5 * (頂部面積 - 根部面積)
-    const aSpline = aRoot + 0.5 * (aTop - aRoot);
-    
-    // 體積 A = (花齒等效面積 - 底盤面積) * 厚度
-    const calculatedVolA = (aSpline - aBase) * tA;
-    setVolA(calculatedVolA > 0 ? calculatedVolA : 0);
-
-    // 2. 計算溝環體積 B
-    const calculatedVolB = Math.PI * (Math.pow(dOut / 2, 2) - Math.pow(dIn / 2, 2)) * tB;
-    setVolB(calculatedVolB > 0 ? calculatedVolB : 0);
-
-    // 3. 計算填充比
-    if (calculatedVolB > 0) {
-      setFillRatio((calculatedVolA / calculatedVolB) * 100);
-    } else {
-      setFillRatio(0);
-    }
-  }, [dTop, dRoot, dBase, tA, dOut, dIn, tB]);
-
-  // --- SVG 繪製參數 ---
-  const cx = 300;
-  const cy = 300;
-  const scale = 80; // 放大比例：將 mm 轉為像素 (例如 5mm 直徑 -> 2.5 * 80 = 200px 半徑)
-  
-  const rTop = (dTop / 2) * scale;
-  const rRoot = (dRoot / 2) * scale;
-  const rBase = (dBase / 2) * scale;
-  const rOut = (dOut / 2) * scale;
-  const rIn = (dIn / 2) * scale;
-
-  // 產生花齒路徑 (16齒示意)
-  const numTeeth = 16;
-  let splinePath = "";
-  for (let i = 0; i < numTeeth; i++) {
-    const angle1 = (i * 360 / numTeeth) * (Math.PI / 180);
-    const angle2 = ((i + 0.5) * 360 / numTeeth) * (Math.PI / 180);
-    
-    const x1 = cx + rTop * Math.cos(angle1);
-    const y1 = cy + rTop * Math.sin(angle1);
-    const x2 = cx + rRoot * Math.cos(angle2);
-    const y2 = cy + rRoot * Math.sin(angle2);
-
-    if (i === 0) {
-      splinePath += `M ${x1} ${y1} L ${x2} ${y2} `;
-    } else {
-      splinePath += `L ${x1} ${y1} L ${x2} ${y2} `;
-    }
-  }
-  splinePath += "Z";
-
-  // 共用 Input 元件，保持畫面簡潔
-  const InputControl = ({ label, value, setter, colorClass, min, step }) => (
-    <div className={`flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 ${colorClass} w-40 z-10`}>
-      <label className="text-xs font-bold text-gray-600 mb-1">{label}</label>
-      <div className="flex items-center">
-        <input 
-          type="number" 
-          value={value} 
-          min={min} 
-          step={step}
-          onChange={(e) => setter(parseFloat(e.target.value) || 0)}
-          className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50"
-        />
-        <span className="text-xs text-gray-400 ml-1">mm</span>
-      </div>
+    <!-- 頂部標題 -->
+    <div class="w-full max-w-5xl mb-6 text-center">
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">鉚釘花齒干涉填充比計算器</h1>
+        <p class="text-slate-500 mt-2 text-sm">於下方圖面兩側直接修改直徑與厚度參數，系統將即時分析您的設計餘裕。</p>
     </div>
-  );
 
-  return (
-    <div className="min-h-screen bg-slate-100 p-4 md:p-8 font-sans flex flex-col items-center">
-      
-      {/* 頂部標題 */}
-      <div className="w-full max-w-5xl mb-6 text-center">
-        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">鉚釘花齒干涉填充比計算器</h1>
-        <p className="text-slate-500 mt-2 text-sm">於下方圖面兩側直接修改直徑與厚度參數，系統將即時分析您的設計餘裕。</p>
-      </div>
-
-      {/* 主要內容區 */}
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- 主要內容區 -->
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* 左側與中間：互動圖面區 (佔2欄) */}
-        <div className="lg:col-span-2 relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex justify-center items-center p-4 min-h-[600px]">
-          
-          {/* 絕對定位的輸入框 - 放在四個角落與引線對應 */}
-          <div className="absolute top-6 left-6">
-            <InputControl label="花齒頂部直徑 (D_top)" value={dTop} setter={setDTop} colorClass="border-blue-500" min="0" step="0.01" />
-          </div>
-          <div className="absolute top-6 right-6">
-            <InputControl label="花齒根部直徑 (D_root)" value={dRoot} setter={setDRoot} colorClass="border-green-500" min="0" step="0.01" />
-          </div>
-          <div className="absolute bottom-6 left-6">
-            <InputControl label="鉚釘底盤直徑 (D_base)" value={dBase} setter={setDBase} colorClass="border-red-500" min="0" step="0.01" />
-          </div>
-          <div className="absolute bottom-6 right-6 space-y-3">
-            <InputControl label="溝環外徑 (D_out)" value={dOut} setter={setDOut} colorClass="border-purple-500" min="0" step="0.01" />
-            <InputControl label="溝槽內徑 (D_in)" value={dIn} setter={setDIn} colorClass="border-orange-500" min="0" step="0.01" />
-          </div>
-
-          {/* SVG 繪圖區 */}
-          <svg width="600" height="600" className="w-full max-w-[500px] max-h-[500px]" viewBox="0 0 600 600">
-            {/* 背景格線 */}
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" strokeWidth="1" />
-            </pattern>
-            <rect width="600" height="600" fill="url(#grid)" />
-
-            {/* 引線 (連接輸入框與幾何特徵) */}
-            <path d="M 120 70 L 250 150" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-            <path d="M 480 70 L 350 160" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-            <path d="M 120 530 L 250 420" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
-            <path d="M 480 500 L 400 380" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+        <!-- 左側與中間：互動圖面區 (佔2欄) -->
+        <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex justify-center items-center p-4 min-h-[600px]">
             
-            <g transform="translate(0, 0)">
-              {/* 實體花齒外型 */}
-              <path d={splinePath} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
-              
-              {/* 頂部圓 (虛線) */}
-              <circle cx={cx} cy={cy} r={rTop} fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="5 5" />
-              
-              {/* 根部圓 (虛線) */}
-              <circle cx={cx} cy={cy} r={rRoot} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="5 5" />
-              
-              {/* 底盤圓 (實體挖空) */}
-              <circle cx={cx} cy={cy} r={rBase} fill="#ffffff" stroke="#ef4444" strokeWidth="2" />
-              
-              {/* 溝環外徑 (虛線) */}
-              <circle cx={cx} cy={cy} r={rOut} fill="none" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="8 4" />
-              
-              {/* 溝環內徑 (虛線) */}
-              <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#f97316" strokeWidth="1.5" strokeDasharray="8 4" />
-              
-              {/* 中心十字線 */}
-              <path d={`M ${cx-20} ${cy} L ${cx+20} ${cy} M ${cx} ${cy-20} L ${cx} ${cy+20}`} stroke="#cbd5e1" strokeWidth="1" />
-            </g>
-          </svg>
+            <!-- 絕對定位的輸入框 - 左上 -->
+            <div class="absolute top-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-blue-500 w-40 z-10">
+                <label class="text-xs font-bold text-gray-600 mb-1">花齒頂部直徑 (D_top)</label>
+                <div class="flex items-center">
+                    <input type="number" id="dTop" value="5.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
+                    <span class="text-xs text-gray-400 ml-1">mm</span>
+                </div>
+            </div>
+
+            <!-- 絕對定位的輸入框 - 右上 -->
+            <div class="absolute top-6 right-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-green-500 w-40 z-10">
+                <label class="text-xs font-bold text-gray-600 mb-1">花齒根部直徑 (D_root)</label>
+                <div class="flex items-center">
+                    <input type="number" id="dRoot" value="4.47" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
+                    <span class="text-xs text-gray-400 ml-1">mm</span>
+                </div>
+            </div>
+
+            <!-- 絕對定位的輸入框 - 左下 -->
+            <div class="absolute bottom-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-red-500 w-40 z-10">
+                <label class="text-xs font-bold text-gray-600 mb-1">鉚釘底盤直徑 (D_base)</label>
+                <div class="flex items-center">
+                    <input type="number" id="dBase" value="4.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
+                    <span class="text-xs text-gray-400 ml-1">mm</span>
+                </div>
+            </div>
+
+            <!-- 絕對定位的輸入框 - 右下 -->
+            <div class="absolute bottom-6 right-6 space-y-3 z-10">
+                <div class="flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-purple-500 w-40">
+                    <label class="text-xs font-bold text-gray-600 mb-1">溝環外徑 (D_out)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="dOut" value="4.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
+                        <span class="text-xs text-gray-400 ml-1">mm</span>
+                    </div>
+                </div>
+                <div class="flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-orange-500 w-40">
+                    <label class="text-xs font-bold text-gray-600 mb-1">溝槽內徑 (D_in)</label>
+                    <div class="flex items-center">
+                        <input type="number" id="dIn" value="3.40" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
+                        <span class="text-xs text-gray-400 ml-1">mm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG 繪圖區 -->
+            <svg width="600" height="600" class="w-full max-w-[500px] max-h-[500px]" viewBox="0 0 600 600">
+                <!-- 背景格線 -->
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1" />
+                </pattern>
+                <rect width="600" height="600" fill="url(#grid)" />
+
+                <!-- 引線 -->
+                <path d="M 120 70 L 250 150" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
+                <path d="M 480 70 L 350 160" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
+                <path d="M 120 530 L 250 420" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
+                <path d="M 480 500 L 400 380" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
+                
+                <g transform="translate(0, 0)">
+                    <!-- 實體花齒外型 -->
+                    <path id="svgSpline" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" />
+                    
+                    <!-- 頂部圓 (虛線) -->
+                    <circle id="svgTop" cx="300" cy="300" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5 5" />
+                    
+                    <!-- 根部圓 (虛線) -->
+                    <circle id="svgRoot" cx="300" cy="300" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5 5" />
+                    
+                    <!-- 底盤圓 (實體挖空) -->
+                    <circle id="svgBase" cx="300" cy="300" fill="#ffffff" stroke="#ef4444" stroke-width="2" />
+                    
+                    <!-- 溝環外徑 (虛線) -->
+                    <circle id="svgOut" cx="300" cy="300" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="8 4" />
+                    
+                    <!-- 溝環內徑 (虛線) -->
+                    <circle id="svgIn" cx="300" cy="300" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="8 4" />
+                    
+                    <!-- 中心十字線 -->
+                    <path d="M 280 300 L 320 300 M 300 280 L 300 320" stroke="#cbd5e1" stroke-width="1" />
+                </g>
+            </svg>
         </div>
 
-        {/* 右側：厚度設定與計算結果區 */}
-        <div className="flex flex-col gap-6">
-          
-          {/* 深度/厚度參數設定 */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="text-lg font-bold text-slate-700 mb-4 flex items-center">
-              <span className="w-2 h-6 bg-slate-800 rounded mr-2"></span>
-              深度/厚度參數
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-semibold text-gray-600 block mb-1">花齒干涉厚度 (t_A)</label>
-                <div className="flex items-center">
-                  <input type="number" value={tA} step="0.01" onChange={e => setTA(parseFloat(e.target.value)||0)} className="w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
-                  <span className="ml-2 text-gray-500">mm</span>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-semibold text-gray-600 block mb-1">溝環容納深度 (t_B)</label>
-                <div className="flex items-center">
-                  <input type="number" value={tB} step="0.01" onChange={e => setTB(parseFloat(e.target.value)||0)} className="w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
-                  <span className="ml-2 text-gray-500">mm</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 計算結果面板 */}
-          <div className="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex-1">
-            <h2 className="text-lg font-bold mb-6 flex items-center">
-              <span className="w-2 h-6 bg-blue-400 rounded mr-2"></span>
-              分析結果
-            </h2>
+        <!-- 右側：厚度設定與計算結果區 -->
+        <div class="flex flex-col gap-6">
             
-            <div className="space-y-6">
-              {/* 體積 A */}
-              <div className="flex justify-between items-center border-b border-slate-600 pb-3">
-                <span className="text-slate-300">花齒干涉體積 A</span>
-                <span className="font-mono text-xl">{volA.toFixed(4)} <span className="text-xs text-slate-400">mm³</span></span>
-              </div>
-              
-              {/* 體積 B */}
-              <div className="flex justify-between items-center border-b border-slate-600 pb-3">
-                <span className="text-slate-300">溝環容納體積 B</span>
-                <span className="font-mono text-xl">{volB.toFixed(4)} <span className="text-xs text-slate-400">mm³</span></span>
-              </div>
-
-              {/* 填充比大字與進度條 */}
-              <div className="pt-2">
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-sm text-slate-400">體積填充比 (A / B)</span>
-                  <span className={`text-4xl font-black ${fillRatio > 100 ? 'text-red-400' : 'text-green-400'}`}>
-                    {fillRatio.toFixed(1)}%
-                  </span>
+            <!-- 深度/厚度參數設定 -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                    <span class="w-2 h-6 bg-slate-800 rounded mr-2"></span>
+                    深度/厚度參數
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600 block mb-1">花齒干涉厚度 (t_A)</label>
+                        <div class="flex items-center">
+                            <input type="number" id="tA" value="0.30" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
+                            <span class="ml-2 text-gray-500">mm</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600 block mb-1">溝環容納深度 (t_B)</label>
+                        <div class="flex items-center">
+                            <input type="number" id="tB" value="0.30" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
+                            <span class="ml-2 text-gray-500">mm</span>
+                        </div>
+                    </div>
                 </div>
-                
-                {/* 視覺化進度條 */}
-                <div className="w-full h-4 bg-slate-700 rounded-full overflow-hidden relative">
-                  <div 
-                    className={`h-full transition-all duration-500 ${fillRatio > 100 ? 'bg-red-500' : 'bg-green-500'}`}
-                    style={{ width: `${Math.min(fillRatio, 100)}%` }}
-                  ></div>
-                  {/* 超過100%時的額外標記 */}
-                  {fillRatio > 100 && (
-                    <div className="absolute top-0 bottom-0 right-0 w-2 bg-yellow-400 animate-pulse"></div>
-                  )}
-                </div>
-                
-                <p className="mt-3 text-xs text-slate-400 leading-relaxed">
-                  {fillRatio > 100 
-                    ? "⚠️ 警告：填充比大於 100%。花齒材料體積超過溝槽容納空間，壓配時可能產生嚴重毛邊或過大應力。" 
-                    : fillRatio > 80
-                    ? "✅ 狀態良好：填充比適中。能確保鉚合緊密且有足夠的餘裕空間容納材料變形。"
-                    : "ℹ️ 提示：填充比較低。請確認溝槽空間是否過大，可能導致鉚合固持力不足。"}
-                </p>
-              </div>
             </div>
-          </div>
-          
+
+            <!-- 計算結果面板 -->
+            <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex-1">
+                <h2 class="text-lg font-bold mb-6 flex items-center">
+                    <span class="w-2 h-6 bg-blue-400 rounded mr-2"></span>
+                    分析結果
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- 體積 A -->
+                    <div class="flex justify-between items-center border-b border-slate-600 pb-3">
+                        <span class="text-slate-300">花齒干涉體積 A</span>
+                        <span class="font-mono text-xl"><span id="txtVolA">0.0000</span> <span class="text-xs text-slate-400">mm³</span></span>
+                    </div>
+                    
+                    <!-- 體積 B -->
+                    <div class="flex justify-between items-center border-b border-slate-600 pb-3">
+                        <span class="text-slate-300">溝環容納體積 B</span>
+                        <span class="font-mono text-xl"><span id="txtVolB">0.0000</span> <span class="text-xs text-slate-400">mm³</span></span>
+                    </div>
+
+                    <!-- 填充比大字與進度條 -->
+                    <div class="pt-2">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm text-slate-400">體積填充比 (A / B)</span>
+                            <span id="txtRatio" class="text-4xl font-black text-green-400">0.0%</span>
+                        </div>
+                        
+                        <!-- 視覺化進度條 -->
+                        <div class="w-full h-4 bg-slate-700 rounded-full overflow-hidden relative">
+                            <div id="barRatio" class="h-full transition-all duration-500 bg-green-500" style="width: 0%;"></div>
+                            <!-- 超過100%時的額外標記 -->
+                            <div id="barPulse" class="hidden absolute top-0 bottom-0 right-0 w-2 bg-yellow-400 animate-pulse"></div>
+                        </div>
+                        
+                        <p id="txtStatus" class="mt-3 text-xs text-slate-400 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+            
         </div>
-      </div>
     </div>
-  );
-}
+
+    <!-- 邏輯運算腳本 -->
+    <script>
+        function updateCalculations() {
+            // 讀取數值
+            const dTop = parseFloat(document.getElementById('dTop').value) || 0;
+            const dRoot = parseFloat(document.getElementById('dRoot').value) || 0;
+            const dBase = parseFloat(document.getElementById('dBase').value) || 0;
+            const dOut = parseFloat(document.getElementById('dOut').value) || 0;
+            const dIn = parseFloat(document.getElementById('dIn').value) || 0;
+            const tA = parseFloat(document.getElementById('tA').value) || 0;
+            const tB = parseFloat(document.getElementById('tB').value) || 0;
+
+            // 1. 計算花齒干涉體積 A (等效 50% 面積法)
+            const aBase = Math.PI * Math.pow(dBase / 2, 2);
+            const aRoot = Math.PI * Math.pow(dRoot / 2, 2);
+            const aTop = Math.PI * Math.pow(dTop / 2, 2);
+            const aSpline = aRoot + 0.5 * (aTop - aRoot);
+            
+            let volA = (aSpline - aBase) * tA;
+            volA = volA > 0 ? volA : 0;
+
+            // 2. 計算溝環體積 B
+            let volB = Math.PI * (Math.pow(dOut / 2, 2) - Math.pow(dIn / 2, 2)) * tB;
+            volB = volB > 0 ? volB : 0;
+
+            // 3. 計算填充比
+            let fillRatio = 0;
+            if (volB > 0) {
+                fillRatio = (volA / volB) * 100;
+            }
+
+            // 更新文字與數字顯示
+            document.getElementById('txtVolA').innerText = volA.toFixed(4);
+            document.getElementById('txtVolB').innerText = volB.toFixed(4);
+            
+            const txtRatio = document.getElementById('txtRatio');
+            txtRatio.innerText = fillRatio.toFixed(1) + '%';
+            
+            const barRatio = document.getElementById('barRatio');
+            const barPulse = document.getElementById('barPulse');
+            const txtStatus = document.getElementById('txtStatus');
+            
+            barRatio.style.width = Math.min(fillRatio, 100) + '%';
+
+            // 判斷狀態更新顏色
+            if (fillRatio > 100) {
+                txtRatio.className = 'text-4xl font-black text-red-400';
+                barRatio.className = 'h-full transition-all duration-500 bg-red-500';
+                barPulse.classList.remove('hidden');
+                txtStatus.innerText = "⚠️ 警告：填充比大於 100%。花齒材料體積超過溝槽容納空間，壓配時可能產生嚴重毛邊或過大應力。";
+            } else {
+                txtRatio.className = 'text-4xl font-black text-green-400';
+                barRatio.className = 'h-full transition-all duration-500 bg-green-500';
+                barPulse.classList.add('hidden');
+                if (fillRatio > 80) {
+                    txtStatus.innerText = "✅ 狀態良好：填充比適中。能確保鉚合緊密且有足夠的餘裕空間容納材料變形。";
+                } else {
+                    txtStatus.innerText = "ℹ️ 提示：填充比較低。請確認溝槽空間是否過大，可能導致鉚合固持力不足。";
+                }
+            }
+
+            // 更新 SVG 圖形
+            const scale = 80;
+            const cx = 300, cy = 300;
+            const rTop = (dTop / 2) * scale;
+            const rRoot = (dRoot / 2) * scale;
+            const rBase = (dBase / 2) * scale;
+            const rOut = (dOut / 2) * scale;
+            const rIn = (dIn / 2) * scale;
+
+            document.getElementById('svgTop').setAttribute('r', Math.max(rTop, 0));
+            document.getElementById('svgRoot').setAttribute('r', Math.max(rRoot, 0));
+            document.getElementById('svgBase').setAttribute('r', Math.max(rBase, 0));
+            document.getElementById('svgOut').setAttribute('r', Math.max(rOut, 0));
+            document.getElementById('svgIn').setAttribute('r', Math.max(rIn, 0));
+
+            // 計算花齒路徑
+            const numTeeth = 16;
+            let splinePath = "";
+            for (let i = 0; i < numTeeth; i++) {
+                const angle1 = (i * 360 / numTeeth) * (Math.PI / 180);
+                const angle2 = ((i + 0.5) * 360 / numTeeth) * (Math.PI / 180);
+                
+                const x1 = cx + rTop * Math.cos(angle1);
+                const y1 = cy + rTop * Math.sin(angle1);
+                const x2 = cx + rRoot * Math.cos(angle2);
+                const y2 = cy + rRoot * Math.sin(angle2);
+
+                if (i === 0) {
+                    splinePath += `M ${x1} ${y1} L ${x2} ${y2} `;
+                } else {
+                    splinePath += `L ${x1} ${y1} L ${x2} ${y2} `;
+                }
+            }
+            splinePath += "Z";
+            document.getElementById('svgSpline').setAttribute('d', splinePath);
+        }
+
+        // 綁定輸入框事件，當數值改變時即時更新
+        document.querySelectorAll('.calc-input').forEach(input => {
+            input.addEventListener('input', updateCalculations);
+        });
+
+        // 初始化第一次計算
+        updateCalculations();
+    </script>
+</body>
+</html>
