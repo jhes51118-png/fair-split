@@ -39,8 +39,8 @@
             </div>
 
             <!-- 絕對定位的輸入框 - 左下 -->
-            <div class="absolute bottom-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-red-500 w-40 z-10">
-                <label class="text-xs font-bold text-gray-600 mb-1">鉚釘底盤直徑 (D_base)</label>
+            <div class="absolute bottom-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-red-500 w-48 z-10">
+                <label class="text-xs font-bold text-gray-600 mb-1">底盤與溝環外徑 (D_base)</label>
                 <div class="flex items-center">
                     <input type="number" id="dBase" value="4.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
                     <span class="text-xs text-gray-400 ml-1">mm</span>
@@ -49,13 +49,6 @@
 
             <!-- 絕對定位的輸入框 - 右下 -->
             <div class="absolute bottom-6 right-6 space-y-3 z-10">
-                <div class="flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-purple-500 w-40">
-                    <label class="text-xs font-bold text-gray-600 mb-1">溝環外徑 (D_out)</label>
-                    <div class="flex items-center">
-                        <input type="number" id="dOut" value="4.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
-                        <span class="text-xs text-gray-400 ml-1">mm</span>
-                    </div>
-                </div>
                 <div class="flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-orange-500 w-40">
                     <label class="text-xs font-bold text-gray-600 mb-1">溝槽內徑 (D_in)</label>
                     <div class="flex items-center">
@@ -77,7 +70,6 @@
                 <path d="M 120 70 L 250 150" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
                 <path d="M 480 70 L 350 160" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
                 <path d="M 120 530 L 250 420" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
-                <path d="M 480 500 L 400 380" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
                 
                 <g transform="translate(0, 0)">
                     <!-- 實體花齒外型 -->
@@ -89,11 +81,8 @@
                     <!-- 根部圓 (虛線) -->
                     <circle id="svgRoot" cx="300" cy="300" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5 5" />
                     
-                    <!-- 底盤圓 (實體挖空) -->
+                    <!-- 底盤圓與溝環外徑 (實體挖空) -->
                     <circle id="svgBase" cx="300" cy="300" fill="#ffffff" stroke="#ef4444" stroke-width="2" />
-                    
-                    <!-- 溝環外徑 (虛線) -->
-                    <circle id="svgOut" cx="300" cy="300" fill="none" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="8 4" />
                     
                     <!-- 溝環內徑 (虛線) -->
                     <circle id="svgIn" cx="300" cy="300" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="8 4" />
@@ -180,7 +169,7 @@
             const dTop = parseFloat(document.getElementById('dTop').value) || 0;
             const dRoot = parseFloat(document.getElementById('dRoot').value) || 0;
             const dBase = parseFloat(document.getElementById('dBase').value) || 0;
-            const dOut = parseFloat(document.getElementById('dOut').value) || 0;
+            const dOut = dBase; // 溝環外徑等於鉚釘底盤直徑
             const dIn = parseFloat(document.getElementById('dIn').value) || 0;
             const tA = parseFloat(document.getElementById('tA').value) || 0;
             const tB = parseFloat(document.getElementById('tB').value) || 0;
@@ -240,13 +229,11 @@
             const rTop = (dTop / 2) * scale;
             const rRoot = (dRoot / 2) * scale;
             const rBase = (dBase / 2) * scale;
-            const rOut = (dOut / 2) * scale;
             const rIn = (dIn / 2) * scale;
 
             document.getElementById('svgTop').setAttribute('r', Math.max(rTop, 0));
             document.getElementById('svgRoot').setAttribute('r', Math.max(rRoot, 0));
             document.getElementById('svgBase').setAttribute('r', Math.max(rBase, 0));
-            document.getElementById('svgOut').setAttribute('r', Math.max(rOut, 0));
             document.getElementById('svgIn').setAttribute('r', Math.max(rIn, 0));
 
             // 計算花齒路徑
