@@ -1,270 +1,1203 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鉚釘花齒干涉填充比計算器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>鉚釘花齒干涉填充比計算器</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef4f7;
+      --line: #d7e0e7;
+      --text: #1d2937;
+      --muted: #66768a;
+      --teal: #0f7785;
+      --teal-soft: #d8eef1;
+      --blue: #255fbb;
+      --blue-soft: #dbe8ff;
+      --amber: #b7791f;
+      --amber-soft: #fff0cb;
+      --red: #bd3d3d;
+      --red-soft: #ffe3e1;
+      --green: #237a57;
+      --green-soft: #dff4e8;
+      --shadow: 0 18px 45px rgba(42, 54, 71, 0.11);
+      --radius: 8px;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(230, 240, 246, 0.78) 0%, rgba(244, 247, 251, 0) 310px),
+        var(--bg);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 32px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--teal);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 40px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .formula-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.74);
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+      box-shadow: 0 8px 22px rgba(42, 54, 71, 0.06);
+    }
+
+    .formula-pill strong {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 330px minmax(500px, 1fr) 365px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfdff;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .panel-subtitle {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .input-panel {
+      position: sticky;
+      top: 16px;
+    }
+
+    .field-list {
+      padding: 16px;
+    }
+
+    .field-group + .field-group {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .group-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .dot.blue {
+      background: var(--blue);
+    }
+
+    .dot.amber {
+      background: var(--amber);
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 124px;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 0;
+    }
+
+    .field label {
+      min-width: 0;
+    }
+
+    .field-name {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.35;
+    }
+
+    .field-symbol {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      border: 1px solid #c9d6df;
+      border-radius: 7px;
+      background: #fff;
+      overflow: hidden;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15, 119, 133, 0.14);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      padding: 9px 8px;
+      color: var(--text);
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-weight: 800;
+      text-align: right;
+      background: transparent;
+    }
+
+    .unit {
+      padding: 0 9px 0 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .linked-row {
+      margin: 10px 0 0;
+      padding: 10px 12px;
+      border: 1px solid var(--blue-soft);
+      border-radius: var(--radius);
+      background: #f4f8ff;
+      color: #365b8f;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 16px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 36px;
+      border: 1px solid #cbd7df;
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .icon-btn:hover {
+      transform: translateY(-1px);
+      border-color: #9fb0bd;
+      box-shadow: 0 8px 16px rgba(42, 54, 71, 0.11);
+    }
+
+    .icon-btn.reset {
+      flex: 1;
+    }
+
+    .visual-panel {
+      min-height: 690px;
+    }
+
+    .visual-stage {
+      display: grid;
+      grid-template-rows: minmax(380px, 1fr) 230px;
+      gap: 0;
+      min-height: 642px;
+    }
+
+    .svg-wrap {
+      position: relative;
+      min-height: 360px;
+      padding: 16px;
+      background: #f7fafc;
+    }
+
+    .svg-wrap + .svg-wrap {
+      border-top: 1px solid var(--line);
+      min-height: 230px;
+      background: #ffffff;
+    }
+
+    .view-tag {
+      position: absolute;
+      left: 16px;
+      top: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      z-index: 1;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drawing-note {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      max-width: 290px;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .result-panel {
+      position: sticky;
+      top: 16px;
+    }
+
+    .hero-result {
+      padding: 18px 16px 16px;
+      background: #172330;
+      color: #fff;
+    }
+
+    .hero-label {
+      margin: 0 0 8px;
+      color: #afc3d3;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .ratio {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .ratio-value {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: clamp(40px, 5vw, 58px);
+      line-height: 1;
+      font-weight: 900;
+      color: #6ee7b7;
+      letter-spacing: 0;
+    }
+
+    .ratio-unit {
+      color: #afc3d3;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .meter {
+      position: relative;
+      height: 13px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: #3ccf91;
+      transition: width 180ms ease, background 180ms ease;
+    }
+
+    .ticks {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 7px;
+      color: #879eb0;
+      font-size: 11px;
+      font-family: "Cascadia Mono", Consolas, monospace;
+    }
+
+    .ticks span:last-child {
+      text-align: right;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 10px 11px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.09);
+      color: #dbe8f1;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .metrics {
+      padding: 16px;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric:first-child {
+      padding-top: 0;
+    }
+
+    .metric:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .metric-name {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .metric-value {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 18px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .metric-value small {
+      color: var(--muted);
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 800;
+    }
+
+    .breakdown {
+      margin: 0 16px 16px;
+      padding: 13px 12px;
+      border: 1px solid var(--teal-soft);
+      border-radius: var(--radius);
+      background: #f2fbfc;
+      color: #315b63;
+      font-size: 12px;
+      line-height: 1.62;
+    }
+
+    .breakdown code {
+      color: #164f59;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-weight: 900;
+      white-space: normal;
+    }
+
+    .warning-list {
+      margin: 0 16px 16px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .warning-list li {
+      margin-top: 8px;
+      padding: 9px 10px;
+      border: 1px solid var(--red-soft);
+      border-radius: var(--radius);
+      background: #fff8f7;
+      color: #8e3434;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .dim-label {
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 13px;
+      font-weight: 900;
+      fill: #2b3a4b;
+    }
+
+    .dim-label.muted {
+      fill: #65758a;
+      font-size: 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: 320px minmax(420px, 1fr);
+      }
+
+      .result-panel {
+        grid-column: 1 / -1;
+        position: static;
+      }
+
+      .input-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .app {
+        width: min(100% - 20px, 680px);
+        padding-top: 14px;
+      }
+
+      .topbar {
+        display: block;
+      }
+
+      .formula-pill {
+        width: 100%;
+        margin-top: 12px;
+        white-space: normal;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .visual-stage {
+        grid-template-rows: auto auto;
+      }
+
+      .svg-wrap {
+        min-height: 0;
+      }
+
+      .svg-wrap:first-child {
+        min-height: 520px;
+      }
+
+      .svg-wrap:first-child svg {
+        height: 392px;
+        margin-top: 14px;
+      }
+
+      .svg-wrap + .svg-wrap {
+        min-height: 280px;
+      }
+
+      .svg-wrap + .svg-wrap svg {
+        height: 240px;
+      }
+
+      .drawing-note {
+        position: static;
+        max-width: none;
+        margin: 8px 0 0;
+      }
+
+      .field {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+
+      .input-wrap {
+        max-width: 180px;
+      }
+    }
+  </style>
 </head>
-<body class="bg-slate-100 p-4 md:p-8 font-sans flex flex-col items-center min-h-screen">
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Rivet spline fill ratio</p>
+        <h1>鉚釘花齒干涉填充比計算器</h1>
+      </div>
+      <div class="formula-pill" aria-label="花齒干涉體積公式">
+        <strong>A</strong>
+        <span>= (花齒實際面積 - 底盤外徑面積) × tA</span>
+      </div>
+    </header>
 
-    <!-- 頂部標題 -->
-    <div class="w-full max-w-5xl mb-6 text-center">
-        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">鉚釘花齒干涉填充比計算器</h1>
-        <p class="text-slate-500 mt-2 text-sm">於下方圖面兩側直接修改直徑與厚度參數，系統將即時分析您的設計餘裕。</p>
-    </div>
+    <section class="workspace" aria-label="花齒填充比計算工作台">
+      <section class="panel input-panel" aria-labelledby="inputTitle">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="inputTitle">尺寸輸入</h2>
+            <p class="panel-subtitle">所有尺寸單位為 mm，數值即時更新。</p>
+          </div>
+        </div>
 
-    <!-- 主要內容區 -->
-    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- 左側與中間：互動圖面區 (佔2欄) -->
-        <div class="lg:col-span-2 relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex justify-center items-center p-4 min-h-[600px]">
-            
-            <!-- 絕對定位的輸入框 - 左上 -->
-            <div class="absolute top-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-blue-500 w-40 z-10">
-                <label class="text-xs font-bold text-gray-600 mb-1">花齒頂部直徑 (D_top)</label>
-                <div class="flex items-center">
-                    <input type="number" id="dTop" value="5.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
-                    <span class="text-xs text-gray-400 ml-1">mm</span>
-                </div>
+        <div class="field-list">
+          <div class="field-group">
+            <p class="group-label"><span class="dot"></span>干涉體積 A</p>
+
+            <div class="field">
+              <label for="dTooth">
+                <span class="field-name">花齒外徑</span>
+                <span class="field-symbol">D花齒外徑</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="dTooth" type="number" min="0" step="0.1" value="5.0">
+                <span class="unit">mm</span>
+              </div>
             </div>
 
-            <!-- 絕對定位的輸入框 - 右上 -->
-            <div class="absolute top-6 right-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-green-500 w-40 z-10">
-                <label class="text-xs font-bold text-gray-600 mb-1">花齒根部直徑 (D_root)</label>
-                <div class="flex items-center">
-                    <input type="number" id="dRoot" value="4.47" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
-                    <span class="text-xs text-gray-400 ml-1">mm</span>
-                </div>
+            <div class="field">
+              <label for="dBase">
+                <span class="field-name">底盤外徑</span>
+                <span class="field-symbol">D底盤外徑</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="dBase" type="number" min="0" step="0.1" value="4.0">
+                <span class="unit">mm</span>
+              </div>
             </div>
 
-            <!-- 絕對定位的輸入框 - 左下 -->
-            <div class="absolute bottom-6 left-6 flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-red-500 w-48 z-10">
-                <label class="text-xs font-bold text-gray-600 mb-1">底盤與溝環外徑 (D_base)</label>
-                <div class="flex items-center">
-                    <input type="number" id="dBase" value="4.00" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
-                    <span class="text-xs text-gray-400 ml-1">mm</span>
-                </div>
+            <div class="field">
+              <label for="tA">
+                <span class="field-name">花齒厚度</span>
+                <span class="field-symbol">tA</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="tA" type="number" min="0" step="0.01" value="0.3">
+                <span class="unit">mm</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <p class="group-label"><span class="dot blue"></span>溝環容納體積 B</p>
+
+            <div class="field">
+              <label for="dIn">
+                <span class="field-name">溝槽內徑</span>
+                <span class="field-symbol">D內徑</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="dIn" type="number" min="0" step="0.1" value="3.4">
+                <span class="unit">mm</span>
+              </div>
             </div>
 
-            <!-- 絕對定位的輸入框 - 右下 -->
-            <div class="absolute bottom-6 right-6 space-y-3 z-10">
-                <div class="flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 border-orange-500 w-40">
-                    <label class="text-xs font-bold text-gray-600 mb-1">溝槽內徑 (D_in)</label>
-                    <div class="flex items-center">
-                        <input type="number" id="dIn" value="3.40" min="0" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50" />
-                        <span class="text-xs text-gray-400 ml-1">mm</span>
-                    </div>
-                </div>
+            <div class="field">
+              <label for="tB">
+                <span class="field-name">溝槽深度</span>
+                <span class="field-symbol">tB</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="tB" type="number" min="0" step="0.01" value="0.3">
+                <span class="unit">mm</span>
+              </div>
             </div>
 
-            <!-- SVG 繪圖區 -->
-            <svg width="600" height="600" class="w-full max-w-[500px] max-h-[500px]" viewBox="0 0 600 600">
-                <!-- 背景格線 -->
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" stroke-width="1" />
-                </pattern>
-                <rect width="600" height="600" fill="url(#grid)" />
+            <div class="linked-row">
+              B 的外徑使用底盤外徑：<strong id="linkedDBase">4.000</strong> mm
+            </div>
+          </div>
 
-                <!-- 引線 -->
-                <path d="M 120 70 L 250 150" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
-                <path d="M 480 70 L 350 160" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
-                <path d="M 120 530 L 250 420" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 2" fill="none" />
-                
-                <g transform="translate(0, 0)">
-                    <!-- 實體花齒外型 -->
-                    <path id="svgSpline" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2" />
-                    
-                    <!-- 頂部圓 (虛線) -->
-                    <circle id="svgTop" cx="300" cy="300" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5 5" />
-                    
-                    <!-- 根部圓 (虛線) -->
-                    <circle id="svgRoot" cx="300" cy="300" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5 5" />
-                    
-                    <!-- 底盤圓與溝環外徑 (實體挖空) -->
-                    <circle id="svgBase" cx="300" cy="300" fill="#ffffff" stroke="#ef4444" stroke-width="2" />
-                    
-                    <!-- 溝環內徑 (虛線) -->
-                    <circle id="svgIn" cx="300" cy="300" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="8 4" />
-                    
-                    <!-- 中心十字線 -->
-                    <path d="M 280 300 L 320 300 M 300 280 L 300 320" stroke="#cbd5e1" stroke-width="1" />
-                </g>
+          <div class="field-group">
+            <p class="group-label"><span class="dot amber"></span>花齒輪廓</p>
+
+            <div class="field">
+              <label for="dRoot">
+                <span class="field-name">齒谷外徑</span>
+                <span class="field-symbol">參與 A 面積</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="dRoot" type="number" min="0" step="0.1" value="4.47">
+                <span class="unit">mm</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="toothCount">
+                <span class="field-name">花齒齒數</span>
+                <span class="field-symbol">參與 A 面積</span>
+              </label>
+              <div class="input-wrap">
+                <input class="calc-input" id="toothCount" type="number" min="6" max="80" step="1" value="32">
+                <span class="unit">齒</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="icon-btn reset" id="resetButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+              <path d="M3 4v6h6"></path>
             </svg>
+            重設預設值
+          </button>
+        </div>
+      </section>
+
+      <section class="panel visual-panel" aria-labelledby="drawingTitle">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="drawingTitle">圖面視覺化</h2>
+            <p class="panel-subtitle">青色區域為本次採用的花齒干涉體積 A。</p>
+          </div>
         </div>
 
-        <!-- 右側：厚度設定與計算結果區 -->
-        <div class="flex flex-col gap-6">
-            
-            <!-- 深度/厚度參數設定 -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
-                    <span class="w-2 h-6 bg-slate-800 rounded mr-2"></span>
-                    深度/厚度參數
-                </h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-sm font-semibold text-gray-600 block mb-1">花齒干涉厚度 (t_A)</label>
-                        <div class="flex items-center">
-                            <input type="number" id="tA" value="0.30" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
-                            <span class="ml-2 text-gray-500">mm</span>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-gray-600 block mb-1">溝環容納深度 (t_B)</label>
-                        <div class="flex items-center">
-                            <input type="number" id="tB" value="0.30" step="0.01" class="calc-input w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
-                            <span class="ml-2 text-gray-500">mm</span>
-                        </div>
-                    </div>
-                </div>
+        <div class="visual-stage">
+          <div class="svg-wrap">
+            <div class="view-tag">
+              <span>俯視</span>
+              <span id="topViewTag">D 5.000 / 4.000</span>
             </div>
-
-            <!-- 計算結果面板 -->
-            <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex-1">
-                <h2 class="text-lg font-bold mb-6 flex items-center">
-                    <span class="w-2 h-6 bg-blue-400 rounded mr-2"></span>
-                    分析結果
-                </h2>
-                
-                <div class="space-y-6">
-                    <!-- 體積 A -->
-                    <div class="flex justify-between items-center border-b border-slate-600 pb-3">
-                        <span class="text-slate-300">花齒干涉體積 A</span>
-                        <span class="font-mono text-xl"><span id="txtVolA">0.0000</span> <span class="text-xs text-slate-400">mm³</span></span>
-                    </div>
-                    
-                    <!-- 體積 B -->
-                    <div class="flex justify-between items-center border-b border-slate-600 pb-3">
-                        <span class="text-slate-300">溝環容納體積 B</span>
-                        <span class="font-mono text-xl"><span id="txtVolB">0.0000</span> <span class="text-xs text-slate-400">mm³</span></span>
-                    </div>
-
-                    <!-- 填充比大字與進度條 -->
-                    <div class="pt-2">
-                        <div class="flex justify-between items-end mb-2">
-                            <span class="text-sm text-slate-400">體積填充比 (A / B)</span>
-                            <span id="txtRatio" class="text-4xl font-black text-green-400">0.0%</span>
-                        </div>
-                        
-                        <!-- 視覺化進度條 -->
-                        <div class="w-full h-4 bg-slate-700 rounded-full overflow-hidden relative">
-                            <div id="barRatio" class="h-full transition-all duration-500 bg-green-500" style="width: 0%;"></div>
-                            <!-- 超過100%時的額外標記 -->
-                            <div id="barPulse" class="hidden absolute top-0 bottom-0 right-0 w-2 bg-yellow-400 animate-pulse"></div>
-                        </div>
-                        
-                        <p id="txtStatus" class="mt-3 text-xs text-slate-400 leading-relaxed"></p>
-                    </div>
-                </div>
+            <svg id="topSvg" viewBox="0 0 640 470" role="img" aria-labelledby="topSvgTitle">
+              <title id="topSvgTitle">花齒實際輪廓與底盤外徑干涉面積</title>
+              <defs>
+                <pattern id="gridPattern" width="32" height="32" patternUnits="userSpaceOnUse">
+                  <path d="M32 0H0V32" fill="none" stroke="#e8eef3" stroke-width="1"></path>
+                </pattern>
+                <pattern id="hatchPattern" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <rect width="10" height="10" fill="#d8eef1"></rect>
+                  <path d="M0 0V10" stroke="#42a6b2" stroke-width="3" opacity="0.45"></path>
+                </pattern>
+                <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#22313f" flood-opacity="0.18"></feDropShadow>
+                </filter>
+              </defs>
+              <rect width="640" height="470" fill="url(#gridPattern)"></rect>
+              <g transform="translate(320 255)" filter="url(#softShadow)">
+                <path id="toothShape" fill="#c8d8df" stroke="#506474" stroke-width="2"></path>
+                <path id="interferenceRing" fill="url(#hatchPattern)" stroke="#0f7785" stroke-width="2" fill-rule="evenodd"></path>
+                <circle id="rootCircle" fill="none" stroke="#8597a7" stroke-width="1.5" stroke-dasharray="7 7"></circle>
+                <circle id="baseCircle" fill="rgba(255,255,255,0.78)" stroke="#255fbb" stroke-width="2.5"></circle>
+                <circle r="3" fill="#2b3a4b"></circle>
+              </g>
+              <path id="dimTooth" fill="none" stroke="#0f7785" stroke-width="2" stroke-dasharray="6 5"></path>
+              <path id="dimBase" fill="none" stroke="#255fbb" stroke-width="2" stroke-dasharray="6 5"></path>
+              <text id="dimToothText" class="dim-label" x="475" y="82">D花齒外徑</text>
+              <text id="dimBaseText" class="dim-label" x="62" y="370">D底盤外徑</text>
+            </svg>
+            <div class="drawing-note">
+              A 採用 V 形齒谷花齒多邊形面積扣除底盤外徑圓面積，齒谷外徑與齒數會直接影響結果。
             </div>
-            
+          </div>
+
+          <div class="svg-wrap">
+            <div class="view-tag">
+              <span>剖面</span>
+              <span id="sideViewTag">B 1.046</span>
+            </div>
+            <svg id="sideSvg" viewBox="0 0 640 260" role="img" aria-labelledby="sideSvgTitle">
+              <title id="sideSvgTitle">底盤溝槽容納體積剖面</title>
+              <rect width="640" height="260" fill="#ffffff"></rect>
+              <line x1="320" y1="24" x2="320" y2="230" stroke="#cbd5df" stroke-width="1" stroke-dasharray="8 6"></line>
+              <path id="sectionShape" fill="#d8e3e8" stroke="#526878" stroke-width="2"></path>
+              <rect id="grooveLeft" fill="#fff0cb" stroke="#b7791f" stroke-width="2"></rect>
+              <rect id="grooveRight" fill="#fff0cb" stroke="#b7791f" stroke-width="2"></rect>
+              <path id="dimGrooveOut" fill="none" stroke="#255fbb" stroke-width="2" stroke-dasharray="6 5"></path>
+              <path id="dimGrooveIn" fill="none" stroke="#b7791f" stroke-width="2" stroke-dasharray="6 5"></path>
+              <path id="dimGrooveDepth" fill="none" stroke="#0f7785" stroke-width="2" stroke-dasharray="6 5"></path>
+              <text id="dimGrooveOutText" class="dim-label" x="440" y="64">D底盤外徑</text>
+              <text id="dimGrooveInText" class="dim-label" x="54" y="218">D內徑</text>
+              <text id="dimGrooveDepthText" class="dim-label" x="487" y="165">tB</text>
+            </svg>
+          </div>
         </div>
-    </div>
+      </section>
 
-    <!-- 邏輯運算腳本 -->
-    <script>
-        function updateCalculations() {
-            // 讀取數值
-            const dTop = parseFloat(document.getElementById('dTop').value) || 0;
-            const dRoot = parseFloat(document.getElementById('dRoot').value) || 0;
-            const dBase = parseFloat(document.getElementById('dBase').value) || 0;
-            const dOut = dBase; // 溝環外徑等於鉚釘底盤直徑
-            const dIn = parseFloat(document.getElementById('dIn').value) || 0;
-            const tA = parseFloat(document.getElementById('tA').value) || 0;
-            const tB = parseFloat(document.getElementById('tB').value) || 0;
+      <aside class="panel result-panel" aria-labelledby="resultTitle">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title" id="resultTitle">計算結果</h2>
+            <p class="panel-subtitle">填充比 = A / B</p>
+          </div>
+        </div>
 
-            // 1. 計算花齒干涉體積 A (等效 50% 面積法)
-            const aBase = Math.PI * Math.pow(dBase / 2, 2);
-            const aRoot = Math.PI * Math.pow(dRoot / 2, 2);
-            const aTop = Math.PI * Math.pow(dTop / 2, 2);
-            const aSpline = aRoot + 0.5 * (aTop - aRoot);
-            
-            let volA = (aSpline - aBase) * tA;
-            volA = volA > 0 ? volA : 0;
+        <div class="hero-result">
+          <p class="hero-label">體積填充比</p>
+          <div class="ratio">
+            <span class="ratio-value" id="fillRatio">0.0</span>
+            <span class="ratio-unit">%</span>
+          </div>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-fill" id="fillMeter"></div>
+          </div>
+          <div class="ticks" aria-hidden="true">
+            <span>0</span>
+            <span>50</span>
+            <span>100</span>
+            <span>150%+</span>
+          </div>
+          <div class="status" id="statusText">等待輸入。</div>
+        </div>
 
-            // 2. 計算溝環體積 B
-            let volB = Math.PI * (Math.pow(dOut / 2, 2) - Math.pow(dIn / 2, 2)) * tB;
-            volB = volB > 0 ? volB : 0;
+        <div class="metrics">
+          <div class="metric">
+            <span class="metric-name">花齒干涉體積 A</span>
+            <span class="metric-value"><span id="volA">0.0000</span> <small>mm&sup3;</small></span>
+          </div>
+          <div class="metric">
+            <span class="metric-name">溝環容納體積 B</span>
+            <span class="metric-value"><span id="volB">0.0000</span> <small>mm&sup3;</small></span>
+          </div>
+          <div class="metric">
+            <span class="metric-name">花齒實際面積</span>
+            <span class="metric-value"><span id="areaTooth">0.0000</span> <small>mm&sup2;</small></span>
+          </div>
+          <div class="metric">
+            <span class="metric-name">底盤外徑面積</span>
+            <span class="metric-value"><span id="areaBase">0.0000</span> <small>mm&sup2;</small></span>
+          </div>
+          <div class="metric">
+            <span class="metric-name">干涉面積差</span>
+            <span class="metric-value"><span id="areaDelta">0.0000</span> <small>mm&sup2;</small></span>
+          </div>
+        </div>
 
-            // 3. 計算填充比
-            let fillRatio = 0;
-            if (volB > 0) {
-                fillRatio = (volA / volB) * 100;
-            }
+        <div class="breakdown">
+          <code id="formulaA">A = 0.0000 × 0.000 = 0.0000 mm³</code><br>
+          <code id="formulaB">B = 0.0000 × 0.000 = 0.0000 mm³</code>
+        </div>
 
-            // 更新文字與數字顯示
-            document.getElementById('txtVolA').innerText = volA.toFixed(4);
-            document.getElementById('txtVolB').innerText = volB.toFixed(4);
-            
-            const txtRatio = document.getElementById('txtRatio');
-            txtRatio.innerText = fillRatio.toFixed(1) + '%';
-            
-            const barRatio = document.getElementById('barRatio');
-            const barPulse = document.getElementById('barPulse');
-            const txtStatus = document.getElementById('txtStatus');
-            
-            barRatio.style.width = Math.min(fillRatio, 100) + '%';
+        <ul class="warning-list hidden" id="warningList" aria-live="polite"></ul>
+      </aside>
+    </section>
+  </main>
 
-            // 判斷狀態更新顏色
-            if (fillRatio > 100) {
-                txtRatio.className = 'text-4xl font-black text-red-400';
-                barRatio.className = 'h-full transition-all duration-500 bg-red-500';
-                barPulse.classList.remove('hidden');
-                txtStatus.innerText = "⚠️ 警告：填充比大於 100%。花齒材料體積超過溝槽容納空間，壓配時可能產生嚴重毛邊或過大應力。";
-            } else {
-                txtRatio.className = 'text-4xl font-black text-green-400';
-                barRatio.className = 'h-full transition-all duration-500 bg-green-500';
-                barPulse.classList.add('hidden');
-                if (fillRatio > 80) {
-                    txtStatus.innerText = "✅ 狀態良好：填充比適中。能確保鉚合緊密且有足夠的餘裕空間容納材料變形。";
-                } else {
-                    txtStatus.innerText = "ℹ️ 提示：填充比較低。請確認溝槽空間是否過大，可能導致鉚合固持力不足。";
-                }
-            }
+  <script>
+    const defaults = {
+      dTooth: 5.0,
+      dBase: 4.0,
+      tA: 0.3,
+      dIn: 3.4,
+      tB: 0.3,
+      dRoot: 4.47,
+      toothCount: 32
+    };
 
-            // 更新 SVG 圖形
-            const scale = 80;
-            const cx = 300, cy = 300;
-            const rTop = (dTop / 2) * scale;
-            const rRoot = (dRoot / 2) * scale;
-            const rBase = (dBase / 2) * scale;
-            const rIn = (dIn / 2) * scale;
+    const ids = [
+      "dTooth",
+      "dBase",
+      "tA",
+      "dIn",
+      "tB",
+      "dRoot",
+      "toothCount",
+      "linkedDBase",
+      "topViewTag",
+      "sideViewTag",
+      "toothShape",
+      "interferenceRing",
+      "rootCircle",
+      "baseCircle",
+      "dimTooth",
+      "dimBase",
+      "dimToothText",
+      "dimBaseText",
+      "sectionShape",
+      "grooveLeft",
+      "grooveRight",
+      "dimGrooveOut",
+      "dimGrooveIn",
+      "dimGrooveDepth",
+      "dimGrooveOutText",
+      "dimGrooveInText",
+      "dimGrooveDepthText",
+      "fillRatio",
+      "fillMeter",
+      "statusText",
+      "volA",
+      "volB",
+      "areaTooth",
+      "areaBase",
+      "areaDelta",
+      "formulaA",
+      "formulaB",
+      "warningList",
+      "resetButton"
+    ];
 
-            document.getElementById('svgTop').setAttribute('r', Math.max(rTop, 0));
-            document.getElementById('svgRoot').setAttribute('r', Math.max(rRoot, 0));
-            document.getElementById('svgBase').setAttribute('r', Math.max(rBase, 0));
-            document.getElementById('svgIn').setAttribute('r', Math.max(rIn, 0));
+    const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
-            // 計算花齒路徑
-            const numTeeth = 16;
-            let splinePath = "";
-            for (let i = 0; i < numTeeth; i++) {
-                const angle1 = (i * 360 / numTeeth) * (Math.PI / 180);
-                const angle2 = ((i + 0.5) * 360 / numTeeth) * (Math.PI / 180);
-                
-                const x1 = cx + rTop * Math.cos(angle1);
-                const y1 = cy + rTop * Math.sin(angle1);
-                const x2 = cx + rRoot * Math.cos(angle2);
-                const y2 = cy + rRoot * Math.sin(angle2);
+    function valueOf(id) {
+      const value = Number.parseFloat(el[id].value);
+      return Number.isFinite(value) ? value : 0;
+    }
 
-                if (i === 0) {
-                    splinePath += `M ${x1} ${y1} L ${x2} ${y2} `;
-                } else {
-                    splinePath += `L ${x1} ${y1} L ${x2} ${y2} `;
-                }
-            }
-            splinePath += "Z";
-            document.getElementById('svgSpline').setAttribute('d', splinePath);
-        }
+    function areaFromDiameter(diameter) {
+      return Math.PI * Math.pow(diameter / 2, 2);
+    }
 
-        // 綁定輸入框事件，當數值改變時即時更新
-        document.querySelectorAll('.calc-input').forEach(input => {
-            input.addEventListener('input', updateCalculations);
-        });
+    function fixed(value, digits = 4) {
+      if (!Number.isFinite(value)) return (0).toFixed(digits);
+      return value.toFixed(digits);
+    }
 
-        // 初始化第一次計算
-        updateCalculations();
-    </script>
+    function polarPathCircle(radius, steps = 96) {
+      const points = [];
+      for (let i = 0; i < steps; i += 1) {
+        const angle = (i / steps) * Math.PI * 2;
+        points.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
+      }
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(3)} ${point[1].toFixed(3)}`).join(" ") + " Z";
+    }
+
+    function normalizedToothCount(toothCount) {
+      return Math.max(6, Math.min(80, Math.round(toothCount || defaults.toothCount)));
+    }
+
+    function buildToothPoints(outerRadius, rootRadius, toothCount) {
+      const safeTeeth = normalizedToothCount(toothCount);
+      const points = [];
+      const pitch = (Math.PI * 2) / safeTeeth;
+      const topLandRatio = 0.5;
+
+      for (let i = 0; i < safeTeeth; i += 1) {
+        const center = i * pitch - Math.PI / 2;
+        const valleyAngle = center - pitch / 2;
+        const topLeftAngle = center - (topLandRatio * pitch) / 2;
+        const topRightAngle = center + (topLandRatio * pitch) / 2;
+
+        points.push([Math.cos(valleyAngle) * rootRadius, Math.sin(valleyAngle) * rootRadius]);
+        points.push([Math.cos(topLeftAngle) * outerRadius, Math.sin(topLeftAngle) * outerRadius]);
+        points.push([Math.cos(topRightAngle) * outerRadius, Math.sin(topRightAngle) * outerRadius]);
+      }
+
+      return points;
+    }
+
+    function pathFromPoints(points) {
+      return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point[0].toFixed(3)} ${point[1].toFixed(3)}`).join(" ") + " Z";
+    }
+
+    function buildToothPath(outerRadius, rootRadius, toothCount) {
+      return pathFromPoints(buildToothPoints(outerRadius, rootRadius, toothCount));
+    }
+
+    function polygonArea(points) {
+      if (points.length < 3) return 0;
+
+      let sum = 0;
+      for (let i = 0; i < points.length; i += 1) {
+        const [x1, y1] = points[i];
+        const [x2, y2] = points[(i + 1) % points.length];
+        sum += x1 * y2 - x2 * y1;
+      }
+
+      return Math.abs(sum) / 2;
+    }
+
+    function toothProfileArea(outerDiameter, rootDiameter, toothCount) {
+      const outerRadius = Math.max(outerDiameter / 2, 0);
+      const rootRadius = Math.max(Math.min(rootDiameter / 2, outerRadius), 0);
+      return polygonArea(buildToothPoints(outerRadius, rootRadius, toothCount));
+    }
+
+    function interferencePath(outerRadius, rootRadius, innerRadius, toothCount) {
+      const outer = buildToothPath(Math.max(outerRadius, 0), Math.max(Math.min(rootRadius, outerRadius), 0), toothCount);
+      const inner = polarPathCircle(Math.max(innerRadius, 0), 140);
+      return `${outer} ${inner}`;
+    }
+
+    function setNumber(id, value, digits = 4) {
+      el[id].textContent = fixed(value, digits);
+    }
+
+    function updateStatus(ratio, volA, volB, warnings) {
+      const meterWidth = Math.max(0, Math.min(ratio, 150)) / 150 * 100;
+      el.fillMeter.style.width = `${meterWidth}%`;
+
+      if (warnings.length) {
+        el.fillMeter.style.background = "var(--red)";
+        el.fillRatio.style.color = "#fecaca";
+        el.statusText.textContent = "尺寸條件尚未成立，請先修正紅色提示項目。";
+        return;
+      }
+
+      if (volA === 0) {
+        el.fillMeter.style.background = "var(--amber)";
+        el.fillRatio.style.color = "#fde68a";
+        el.statusText.textContent = "目前沒有花齒干涉體積；請確認花齒實際面積大於底盤外徑面積。";
+      } else if (volB === 0) {
+        el.fillMeter.style.background = "var(--red)";
+        el.fillRatio.style.color = "#fecaca";
+        el.statusText.textContent = "溝槽容納體積為 0，無法取得有效填充比。";
+      } else if (ratio > 100) {
+        el.fillMeter.style.background = "var(--red)";
+        el.fillRatio.style.color = "#fecaca";
+        el.statusText.textContent = "填充比超過 100%，花齒材料體積大於溝槽容納空間。";
+      } else if (ratio >= 80) {
+        el.fillMeter.style.background = "#3ccf91";
+        el.fillRatio.style.color = "#6ee7b7";
+        el.statusText.textContent = "填充比落在偏高但可控區間，適合再搭配實際壓配與毛邊條件確認。";
+      } else if (ratio >= 55) {
+        el.fillMeter.style.background = "#3ccf91";
+        el.fillRatio.style.color = "#6ee7b7";
+        el.statusText.textContent = "填充比位於較均衡區間，溝槽仍保有可觀容納餘裕。";
+      } else {
+        el.fillMeter.style.background = "var(--amber)";
+        el.fillRatio.style.color = "#fde68a";
+        el.statusText.textContent = "填充比較低，請確認固持力與溝槽空間是否符合設計需求。";
+      }
+    }
+
+    function updateWarnings(warnings) {
+      el.warningList.innerHTML = "";
+      el.warningList.classList.toggle("hidden", warnings.length === 0);
+
+      warnings.forEach((warning) => {
+        const item = document.createElement("li");
+        item.textContent = warning;
+        el.warningList.appendChild(item);
+      });
+    }
+
+    function updateTopDrawing(values) {
+      const maxDiameter = Math.max(values.dTooth, values.dBase, values.dRoot, 1);
+      const scale = Math.min(185 / (maxDiameter / 2), 98);
+      const outerRadius = Math.max(values.dTooth / 2 * scale, 0);
+      const baseRadius = Math.max(values.dBase / 2 * scale, 0);
+      const rootRadius = Math.max(Math.min(values.dRoot / 2 * scale, outerRadius), 0);
+
+      el.toothShape.setAttribute("d", buildToothPath(outerRadius, rootRadius, values.toothCount));
+      el.rootCircle.setAttribute("r", rootRadius);
+      el.baseCircle.setAttribute("r", baseRadius);
+      el.interferenceRing.setAttribute("d", interferencePath(outerRadius, rootRadius, baseRadius, values.toothCount));
+      el.interferenceRing.style.opacity = values.dTooth > values.dBase && values.dRoot > 0 ? "1" : "0.22";
+
+      el.dimTooth.setAttribute("d", `M 445 82 L ${(320 + outerRadius * 0.72).toFixed(1)} ${(255 - outerRadius * 0.72).toFixed(1)}`);
+      el.dimBase.setAttribute("d", `M 170 365 L ${(320 - baseRadius * 0.7).toFixed(1)} ${(255 + baseRadius * 0.7).toFixed(1)}`);
+      el.dimToothText.textContent = `D花齒 ${fixed(values.dTooth, 3)}`;
+      el.dimBaseText.textContent = `D底盤 ${fixed(values.dBase, 3)}`;
+      el.topViewTag.textContent = `D ${fixed(values.dTooth, 3)} / ${fixed(values.dBase, 3)}`;
+    }
+
+    function updateSideDrawing(values, volB) {
+      const maxDiameter = Math.max(values.dBase, values.dIn, 1);
+      const scale = Math.min(190 / (maxDiameter / 2), 110);
+      const cx = 320;
+      const baseRadius = Math.max(values.dBase / 2 * scale, 0);
+      const innerRadius = Math.max(Math.min(values.dIn / 2 * scale, baseRadius), 0);
+      const topY = 58;
+      const ledgeY = 111;
+      const bottomY = 185;
+      const grooveDepth = Math.max(0, Math.min(values.tB * scale, 58));
+      const grooveTopY = bottomY - grooveDepth;
+      const neckRadius = Math.max(Math.min(baseRadius * 0.56, 92), 38);
+
+      const sectionPath = [
+        `M ${cx - neckRadius} ${topY}`,
+        `L ${cx + neckRadius} ${topY}`,
+        `L ${cx + neckRadius} ${ledgeY}`,
+        `L ${cx + baseRadius} ${ledgeY}`,
+        `L ${cx + baseRadius} ${grooveTopY}`,
+        `L ${cx + innerRadius} ${grooveTopY}`,
+        `L ${cx + innerRadius} ${bottomY}`,
+        `L ${cx} 218`,
+        `L ${cx - innerRadius} ${bottomY}`,
+        `L ${cx - innerRadius} ${grooveTopY}`,
+        `L ${cx - baseRadius} ${grooveTopY}`,
+        `L ${cx - baseRadius} ${ledgeY}`,
+        `L ${cx - neckRadius} ${ledgeY}`,
+        "Z"
+      ].join(" ");
+
+      el.sectionShape.setAttribute("d", sectionPath);
+
+      const grooveWidth = Math.max(baseRadius - innerRadius, 0);
+      el.grooveLeft.setAttribute("x", cx - baseRadius);
+      el.grooveLeft.setAttribute("y", grooveTopY);
+      el.grooveLeft.setAttribute("width", grooveWidth);
+      el.grooveLeft.setAttribute("height", grooveDepth);
+      el.grooveRight.setAttribute("x", cx + innerRadius);
+      el.grooveRight.setAttribute("y", grooveTopY);
+      el.grooveRight.setAttribute("width", grooveWidth);
+      el.grooveRight.setAttribute("height", grooveDepth);
+
+      el.dimGrooveOut.setAttribute("d", `M 447 64 L ${(cx + baseRadius).toFixed(1)} ${ledgeY}`);
+      el.dimGrooveIn.setAttribute("d", `M 129 214 L ${(cx - innerRadius).toFixed(1)} ${bottomY}`);
+      el.dimGrooveDepth.setAttribute("d", `M 485 160 L ${(cx + baseRadius + 8).toFixed(1)} ${(grooveTopY + grooveDepth / 2).toFixed(1)}`);
+      el.dimGrooveOutText.textContent = `D外 ${fixed(values.dBase, 3)}`;
+      el.dimGrooveInText.textContent = `D內 ${fixed(values.dIn, 3)}`;
+      el.dimGrooveDepthText.textContent = `tB ${fixed(values.tB, 3)}`;
+      el.sideViewTag.textContent = `B ${fixed(volB, 3)} mm³`;
+    }
+
+    function calculate() {
+      const values = {
+        dTooth: valueOf("dTooth"),
+        dBase: valueOf("dBase"),
+        tA: valueOf("tA"),
+        dIn: valueOf("dIn"),
+        tB: valueOf("tB"),
+        dRoot: valueOf("dRoot"),
+        toothCount: valueOf("toothCount")
+      };
+
+      const areaTooth = toothProfileArea(values.dTooth, values.dRoot, values.toothCount);
+      const areaEnvelope = areaFromDiameter(values.dTooth);
+      const areaBase = areaFromDiameter(values.dBase);
+      const areaIn = areaFromDiameter(values.dIn);
+      const areaDelta = Math.max(areaTooth - areaBase, 0);
+      const grooveArea = Math.max(areaBase - areaIn, 0);
+      const volA = areaDelta * Math.max(values.tA, 0);
+      const volB = grooveArea * Math.max(values.tB, 0);
+      const ratio = volB > 0 ? (volA / volB) * 100 : 0;
+
+      const warnings = [];
+      if (values.dTooth <= 0) warnings.push("花齒外徑必須大於 0。");
+      if (values.dBase <= 0) warnings.push("底盤外徑必須大於 0。");
+      if (values.dRoot <= 0) warnings.push("齒谷外徑必須大於 0。");
+      if (values.tA <= 0) warnings.push("花齒厚度 tA 必須大於 0。");
+      if (values.tB <= 0) warnings.push("溝槽深度 tB 必須大於 0。");
+      if (values.dTooth <= values.dBase) warnings.push("花齒外徑需大於底盤外徑，才會形成干涉環形體積。");
+      if (areaTooth <= areaBase) warnings.push("花齒實際面積需大於底盤外徑面積，A 才會大於 0。");
+      if (values.dIn >= values.dBase) warnings.push("溝槽內徑需小於底盤外徑，B 才有容納體積。");
+      if (values.dRoot > values.dTooth) warnings.push("齒谷外徑目前大於花齒外徑，俯視圖會自動限制顯示。");
+
+      el.fillRatio.textContent = ratio.toFixed(1);
+      setNumber("volA", volA);
+      setNumber("volB", volB);
+      setNumber("areaTooth", areaTooth);
+      setNumber("areaBase", areaBase);
+      setNumber("areaDelta", areaDelta);
+      el.linkedDBase.textContent = fixed(values.dBase, 3);
+      el.formulaA.textContent = `A = (${fixed(areaTooth)} - ${fixed(areaBase)}) × ${fixed(values.tA, 3)} = ${fixed(volA)} mm³`;
+      el.formulaB.textContent = `B = (${fixed(areaBase)} - ${fixed(areaIn)}) × ${fixed(values.tB, 3)} = ${fixed(volB)} mm³`;
+
+      updateWarnings(warnings);
+      updateStatus(ratio, volA, volB, warnings);
+      updateTopDrawing(values);
+      updateSideDrawing(values, volB);
+
+      window.__rivetCalcLastResult = {
+        ...values,
+        areaTooth,
+        areaEnvelope,
+        areaBase,
+        areaIn,
+        areaDelta,
+        grooveArea,
+        volA,
+        volB,
+        ratio,
+        warnings
+      };
+    }
+
+    document.querySelectorAll(".calc-input").forEach((input) => {
+      input.addEventListener("input", calculate);
+      input.addEventListener("change", calculate);
+    });
+
+    el.resetButton.addEventListener("click", () => {
+      Object.entries(defaults).forEach(([id, value]) => {
+        el[id].value = value;
+      });
+      calculate();
+    });
+
+    calculate();
+  </script>
 </body>
 </html>
