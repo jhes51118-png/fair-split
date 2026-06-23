@@ -1,229 +1,246 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票代號擷取工具</title>
-    <!-- 引入 Tailwind CSS 進行美化 -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Microsoft JhengHei';
-            background-color: #f3f4f6;
-        }
-        /* 自訂滾動條 */
-        textarea::-webkit-scrollbar {
-            width: 8px;
-        }
-        textarea::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-            border-radius: 4px;
-        }
-        textarea::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        textarea::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-    </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4">
+import React, { useState, useEffect } from 'react';
 
-    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
-        <!-- 標題區塊 -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">股票代號擷取工具</h1>
-            <p class="text-gray-500 text-sm">上傳股東會或庫存 CSV 檔案，自動擷取並串接股票代號</p>
-        </div>
+export default function App() {
+  // --- 狀態定義 (預設為您圖面上的數值) ---
+  const [dTop, setDTop] = useState(5.00);   // 花齒頂部直徑
+  const [dRoot, setDRoot] = useState(4.47); // 花齒根部直徑
+  const [dBase, setDBase] = useState(4.00); // 鉚釘底盤直徑
+  const [tA, setTA] = useState(0.30);       // 花齒厚度
 
-        <!-- 檔案上傳區塊 -->
-        <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">1. 選擇 CSV 檔案</label>
-            <div class="flex items-center justify-center w-full">
-                <label for="csvFileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
-                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg class="w-8 h-8 mb-3 text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                        </svg>
-                        <p class="mb-2 text-sm text-gray-700"><span class="font-semibold text-blue-600">點擊上傳</span> 或將檔案拖曳至此</p>
-                        <p class="text-xs text-gray-500">支援 .csv 格式</p>
-                    </div>
-                    <input id="csvFileInput" type="file" accept=".csv" class="hidden" />
-                </label>
-            </div>
-            <p id="fileNameDisplay" class="mt-2 text-sm text-green-600 hidden font-medium">已選取檔案：<span id="fileNameText"></span></p>
-        </div>
+  const [dOut, setDOut] = useState(4.00);   // 溝環外徑
+  const [dIn, setDIn] = useState(3.40);     // 溝環內徑
+  const [tB, setTB] = useState(0.30);       // 溝環深度/厚度
 
-        <!-- 篩選條件區塊 -->
-        <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">2. 篩選條件 (投票狀況)</label>
-            <div class="flex items-center space-x-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <label class="flex items-center cursor-pointer">
-                    <input type="radio" name="voteStatus" value="all" checked class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <span class="ml-2 text-gray-700">全部</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="radio" name="voteStatus" value="voted" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <span class="ml-2 text-gray-700">只擷取「已投票」</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="radio" name="voteStatus" value="unvoted" class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <span class="ml-2 text-gray-700">只擷取「未投票」</span>
-                </label>
-            </div>
-        </div>
+  // --- 計算結果狀態 ---
+  const [volA, setVolA] = useState(0);
+  const [volB, setVolB] = useState(0);
+  const [fillRatio, setFillRatio] = useState(0);
 
-        <!-- 結果顯示區塊 -->
-        <div class="mb-4">
-            <div class="flex justify-between items-end mb-2">
-                <label class="block text-sm font-medium text-gray-700">3. 擷取結果</label>
-                <span id="countDisplay" class="text-xs text-gray-500 hidden">共找到 <span id="countNumber" class="font-bold text-blue-600">0</span> 筆代號</span>
-            </div>
-            <textarea id="resultArea" readonly class="w-full h-40 p-4 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none" placeholder="擷取後的代號會顯示在這裡..."></textarea>
-        </div>
+  // --- 即時計算邏輯 ---
+  useEffect(() => {
+    // 1. 計算花齒干涉體積 A (等效 50% 面積法)
+    const aBase = Math.PI * Math.pow(dBase / 2, 2);
+    const aRoot = Math.PI * Math.pow(dRoot / 2, 2);
+    const aTop = Math.PI * Math.pow(dTop / 2, 2);
+    
+    // 花齒等效面積 = 根部面積 + 0.5 * (頂部面積 - 根部面積)
+    const aSpline = aRoot + 0.5 * (aTop - aRoot);
+    
+    // 體積 A = (花齒等效面積 - 底盤面積) * 厚度
+    const calculatedVolA = (aSpline - aBase) * tA;
+    setVolA(calculatedVolA > 0 ? calculatedVolA : 0);
 
-        <!-- 複製按鈕區塊 -->
-        <div class="flex items-center space-x-4">
-            <button id="copyBtn" onclick="copyToClipboard()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                複製代號
-            </button>
-            <div id="copyMsg" class="hidden px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium transition-opacity">
-                ✅ 已複製到剪貼簿！
-            </div>
-        </div>
+    // 2. 計算溝環體積 B
+    const calculatedVolB = Math.PI * (Math.pow(dOut / 2, 2) - Math.pow(dIn / 2, 2)) * tB;
+    setVolB(calculatedVolB > 0 ? calculatedVolB : 0);
+
+    // 3. 計算填充比
+    if (calculatedVolB > 0) {
+      setFillRatio((calculatedVolA / calculatedVolB) * 100);
+    } else {
+      setFillRatio(0);
+    }
+  }, [dTop, dRoot, dBase, tA, dOut, dIn, tB]);
+
+  // --- SVG 繪製參數 ---
+  const cx = 300;
+  const cy = 300;
+  const scale = 80; // 放大比例：將 mm 轉為像素 (例如 5mm 直徑 -> 2.5 * 80 = 200px 半徑)
+  
+  const rTop = (dTop / 2) * scale;
+  const rRoot = (dRoot / 2) * scale;
+  const rBase = (dBase / 2) * scale;
+  const rOut = (dOut / 2) * scale;
+  const rIn = (dIn / 2) * scale;
+
+  // 產生花齒路徑 (16齒示意)
+  const numTeeth = 16;
+  let splinePath = "";
+  for (let i = 0; i < numTeeth; i++) {
+    const angle1 = (i * 360 / numTeeth) * (Math.PI / 180);
+    const angle2 = ((i + 0.5) * 360 / numTeeth) * (Math.PI / 180);
+    
+    const x1 = cx + rTop * Math.cos(angle1);
+    const y1 = cy + rTop * Math.sin(angle1);
+    const x2 = cx + rRoot * Math.cos(angle2);
+    const y2 = cy + rRoot * Math.sin(angle2);
+
+    if (i === 0) {
+      splinePath += `M ${x1} ${y1} L ${x2} ${y2} `;
+    } else {
+      splinePath += `L ${x1} ${y1} L ${x2} ${y2} `;
+    }
+  }
+  splinePath += "Z";
+
+  // 共用 Input 元件，保持畫面簡潔
+  const InputControl = ({ label, value, setter, colorClass, min, step }) => (
+    <div className={`flex flex-col bg-white p-3 rounded-lg shadow-md border-t-4 ${colorClass} w-40 z-10`}>
+      <label className="text-xs font-bold text-gray-600 mb-1">{label}</label>
+      <div className="flex items-center">
+        <input 
+          type="number" 
+          value={value} 
+          min={min} 
+          step={step}
+          onChange={(e) => setter(parseFloat(e.target.value) || 0)}
+          className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-opacity-50"
+        />
+        <span className="text-xs text-gray-400 ml-1">mm</span>
+      </div>
     </div>
+  );
 
-    <script>
-        const fileInput = document.getElementById('csvFileInput');
-        const resultArea = document.getElementById('resultArea');
-        const copyBtn = document.getElementById('copyBtn');
-        const copyMsg = document.getElementById('copyMsg');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-        const fileNameText = document.getElementById('fileNameText');
-        const countDisplay = document.getElementById('countDisplay');
-        const countNumber = document.getElementById('countNumber');
+  return (
+    <div className="min-h-screen bg-slate-100 p-4 md:p-8 font-sans flex flex-col items-center">
+      
+      {/* 頂部標題 */}
+      <div className="w-full max-w-5xl mb-6 text-center">
+        <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">鉚釘花齒干涉填充比計算器</h1>
+        <p className="text-slate-500 mt-2 text-sm">於下方圖面兩側直接修改直徑與厚度參數，系統將即時分析您的設計餘裕。</p>
+      </div>
 
-        // 儲存原始 CSV 資料，以便切換選項時不用重新上傳
-        let globalCSVText = "";
+      {/* 主要內容區 */}
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* 左側與中間：互動圖面區 (佔2欄) */}
+        <div className="lg:col-span-2 relative bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex justify-center items-center p-4 min-h-[600px]">
+          
+          {/* 絕對定位的輸入框 - 放在四個角落與引線對應 */}
+          <div className="absolute top-6 left-6">
+            <InputControl label="花齒頂部直徑 (D_top)" value={dTop} setter={setDTop} colorClass="border-blue-500" min="0" step="0.01" />
+          </div>
+          <div className="absolute top-6 right-6">
+            <InputControl label="花齒根部直徑 (D_root)" value={dRoot} setter={setDRoot} colorClass="border-green-500" min="0" step="0.01" />
+          </div>
+          <div className="absolute bottom-6 left-6">
+            <InputControl label="鉚釘底盤直徑 (D_base)" value={dBase} setter={setDBase} colorClass="border-red-500" min="0" step="0.01" />
+          </div>
+          <div className="absolute bottom-6 right-6 space-y-3">
+            <InputControl label="溝環外徑 (D_out)" value={dOut} setter={setDOut} colorClass="border-purple-500" min="0" step="0.01" />
+            <InputControl label="溝槽內徑 (D_in)" value={dIn} setter={setDIn} colorClass="border-orange-500" min="0" step="0.01" />
+          </div>
 
-        // 監聽單選按鈕切換事件
-        const radioButtons = document.querySelectorAll('input[name="voteStatus"]');
-        radioButtons.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (globalCSVText) {
-                    processCSV(globalCSVText);
-                }
-            });
-        });
+          {/* SVG 繪圖區 */}
+          <svg width="600" height="600" className="w-full max-w-[500px] max-h-[500px]" viewBox="0 0 600 600">
+            {/* 背景格線 */}
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#f1f5f9" strokeWidth="1" />
+            </pattern>
+            <rect width="600" height="600" fill="url(#grid)" />
 
-        // 監聽檔案上傳事件
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            // 顯示檔案名稱
-            fileNameText.textContent = file.name;
-            fileNameDisplay.classList.remove('hidden');
-
-            const reader = new FileReader();
+            {/* 引線 (連接輸入框與幾何特徵) */}
+            <path d="M 120 70 L 250 150" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+            <path d="M 480 70 L 350 160" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+            <path d="M 120 530 L 250 420" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
+            <path d="M 480 500 L 400 380" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="4 2" fill="none" />
             
-            // 使用 Big5 編碼讀取，避免台灣常見的 Excel CSV 中文亂碼問題
-            // 即使是 UTF-8，因為我們只要數字代號，這也不會影響擷取結果
-            reader.readAsText(file, 'Big5');
+            <g transform="translate(0, 0)">
+              {/* 實體花齒外型 */}
+              <path d={splinePath} fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
+              
+              {/* 頂部圓 (虛線) */}
+              <circle cx={cx} cy={cy} r={rTop} fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="5 5" />
+              
+              {/* 根部圓 (虛線) */}
+              <circle cx={cx} cy={cy} r={rRoot} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="5 5" />
+              
+              {/* 底盤圓 (實體挖空) */}
+              <circle cx={cx} cy={cy} r={rBase} fill="#ffffff" stroke="#ef4444" strokeWidth="2" />
+              
+              {/* 溝環外徑 (虛線) */}
+              <circle cx={cx} cy={cy} r={rOut} fill="none" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="8 4" />
+              
+              {/* 溝環內徑 (虛線) */}
+              <circle cx={cx} cy={cy} r={rIn} fill="none" stroke="#f97316" strokeWidth="1.5" strokeDasharray="8 4" />
+              
+              {/* 中心十字線 */}
+              <path d={`M ${cx-20} ${cy} L ${cx+20} ${cy} M ${cx} ${cy-20} L ${cx} ${cy+20}`} stroke="#cbd5e1" strokeWidth="1" />
+            </g>
+          </svg>
+        </div>
+
+        {/* 右側：厚度設定與計算結果區 */}
+        <div className="flex flex-col gap-6">
+          
+          {/* 深度/厚度參數設定 */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 className="text-lg font-bold text-slate-700 mb-4 flex items-center">
+              <span className="w-2 h-6 bg-slate-800 rounded mr-2"></span>
+              深度/厚度參數
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-600 block mb-1">花齒干涉厚度 (t_A)</label>
+                <div className="flex items-center">
+                  <input type="number" value={tA} step="0.01" onChange={e => setTA(parseFloat(e.target.value)||0)} className="w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
+                  <span className="ml-2 text-gray-500">mm</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-600 block mb-1">溝環容納深度 (t_B)</label>
+                <div className="flex items-center">
+                  <input type="number" value={tB} step="0.01" onChange={e => setTB(parseFloat(e.target.value)||0)} className="w-full bg-gray-50 border border-gray-200 rounded p-2 font-mono"/>
+                  <span className="ml-2 text-gray-500">mm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 計算結果面板 */}
+          <div className="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 text-white flex-1">
+            <h2 className="text-lg font-bold mb-6 flex items-center">
+              <span className="w-2 h-6 bg-blue-400 rounded mr-2"></span>
+              分析結果
+            </h2>
             
-            reader.onload = function(event) {
-                globalCSVText = event.target.result;
-                processCSV(globalCSVText);
-            };
+            <div className="space-y-6">
+              {/* 體積 A */}
+              <div className="flex justify-between items-center border-b border-slate-600 pb-3">
+                <span className="text-slate-300">花齒干涉體積 A</span>
+                <span className="font-mono text-xl">{volA.toFixed(4)} <span className="text-xs text-slate-400">mm³</span></span>
+              </div>
+              
+              {/* 體積 B */}
+              <div className="flex justify-between items-center border-b border-slate-600 pb-3">
+                <span className="text-slate-300">溝環容納體積 B</span>
+                <span className="font-mono text-xl">{volB.toFixed(4)} <span className="text-xs text-slate-400">mm³</span></span>
+              </div>
 
-            reader.onerror = function() {
-                resultArea.value = "讀取檔案發生錯誤，請重試。";
-            };
-        });
-
-        // 處理 CSV 內容
-        function processCSV(text) {
-            // 取得目前的篩選條件
-            const filterValue = document.querySelector('input[name="voteStatus"]:checked').value;
-
-            // 分割每一行 (支援 \n 或 \r\n)
-            const lines = text.trim().split(/\r?\n/);
-            const codes = [];
-
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue; // 跳過空行
-
-                // 取得第一欄資料
-                const firstColumn = line.split(',')[0];
+              {/* 填充比大字與進度條 */}
+              <div className="pt-2">
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-sm text-slate-400">體積填充比 (A / B)</span>
+                  <span className={`text-4xl font-black ${fillRatio > 100 ? 'text-red-400' : 'text-green-400'}`}>
+                    {fillRatio.toFixed(1)}%
+                  </span>
+                </div>
                 
-                // 去除可能存在的等號(=)和雙引號(")，並移除空白
-                const cleanCode = firstColumn.replace(/[="]/g, '').trim();
-
-                // 檢查是否為純數字 (用來過濾掉像是 "證券代號" 這樣的標題行)
-                if (/^\d+$/.test(cleanCode)) {
-                    
-                    // 根據投票狀況進行篩選
-                    if (filterValue === 'voted' && !line.includes('已投票')) {
-                        continue;
-                    }
-                    if (filterValue === 'unvoted' && !line.includes('未投票')) {
-                        continue;
-                    }
-
-                    codes.push(cleanCode);
-                }
-            }
-
-            // 將陣列用逗號串接
-            const finalString = codes.join(',');
-            
-            // 顯示結果
-            resultArea.value = finalString;
-
-            // 顯示數量
-            countNumber.textContent = codes.length;
-            countDisplay.classList.remove('hidden');
-
-            // 啟用複製按鈕
-            if (codes.length > 0) {
-                copyBtn.disabled = false;
-                copyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                resultArea.value = "找不到符合格式的股票代號。";
-                copyBtn.disabled = true;
-                copyBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        // 複製到剪貼簿功能
-        function copyToClipboard() {
-            if (!resultArea.value) return;
-
-            // 選取 textarea 中的文字
-            resultArea.select();
-            resultArea.setSelectionRange(0, 99999); // 支援手機版
-
-            try {
-                // 執行複製指令 (使用文件建議的 execCommand 以兼容 iFrame)
-                document.execCommand('copy');
+                {/* 視覺化進度條 */}
+                <div className="w-full h-4 bg-slate-700 rounded-full overflow-hidden relative">
+                  <div 
+                    className={`h-full transition-all duration-500 ${fillRatio > 100 ? 'bg-red-500' : 'bg-green-500'}`}
+                    style={{ width: `${Math.min(fillRatio, 100)}%` }}
+                  ></div>
+                  {/* 超過100%時的額外標記 */}
+                  {fillRatio > 100 && (
+                    <div className="absolute top-0 bottom-0 right-0 w-2 bg-yellow-400 animate-pulse"></div>
+                  )}
+                </div>
                 
-                // 取消反白
-                window.getSelection().removeAllRanges();
-
-                // 顯示成功提示
-                copyMsg.classList.remove('hidden');
-                
-                // 2秒後隱藏提示
-                setTimeout(() => {
-                    copyMsg.classList.add('hidden');
-                }, 2000);
-            } catch (err) {
-                console.error('複製失敗', err);
-            }
-        }
-    </script>
-</body>
-</html>
+                <p className="mt-3 text-xs text-slate-400 leading-relaxed">
+                  {fillRatio > 100 
+                    ? "⚠️ 警告：填充比大於 100%。花齒材料體積超過溝槽容納空間，壓配時可能產生嚴重毛邊或過大應力。" 
+                    : fillRatio > 80
+                    ? "✅ 狀態良好：填充比適中。能確保鉚合緊密且有足夠的餘裕空間容納材料變形。"
+                    : "ℹ️ 提示：填充比較低。請確認溝槽空間是否過大，可能導致鉚合固持力不足。"}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+  );
+}
